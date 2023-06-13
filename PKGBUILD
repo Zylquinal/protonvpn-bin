@@ -2,8 +2,9 @@
 
 pkgname=protonvpn-bin
 pkgver=4.0.0a5
-pkgrel=1
+pkgrel=2
 pkgdesc="ProtonVPN for Linux"
+url="https://github.com/Zylquinal/protonvpn-bin"
 arch=('any')
 
 depends=('gnome-keyring'
@@ -11,7 +12,7 @@ depends=('gnome-keyring'
          'python-gobject'
          'python-packaging'
          'python-distro'
-         'python=3.11.3-1'
+         'python>=3.11.3-1'
          'python-aiohttp'
          'python-gnupg'
          'python-bcrypt'
