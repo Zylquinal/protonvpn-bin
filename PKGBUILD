@@ -2,7 +2,7 @@
 
 pkgname=protonvpn-bin
 pkgver=4.0.0a7
-pkgrel=1
+pkgrel=2
 pkgdesc="ProtonVPN for Linux"
 url="https://github.com/Zylquinal/protonvpn-bin"
 arch=('any')
@@ -25,6 +25,7 @@ depends=('gnome-keyring'
          'python-jinja'
          'gobject-introspection'
          'networkmanager'
+         'networkmanager-openvpn'
 )
 
 optdepends=('libayatana-appindicator'
