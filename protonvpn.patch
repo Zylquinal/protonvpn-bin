@@ -1,0 +1,140 @@
+diff -rupN original/proton/vpn/connection/constants.py proton/vpn/connection/constants.py
+--- original/proton/vpn/connection/constants.py	2023-07-16 11:56:03.587901167 +0700
++++ proton/vpn/connection/constants.py	2023-07-16 11:49:54.538108888 +0700
+@@ -55,6 +55,28 @@ A1gTTlpi7A==
+ -----END CERTIFICATE-----
+ """
+
++# 2048 bit OpenVPN static key
++TLS_AUTH = """
++-----BEGIN OpenVPN Static key V1-----
++6acef03f62675b4b1bbd03e53b187727
++423cea742242106cb2916a8a4c829756
++3d22c7e5cef430b1103c6f66eb1fc5b3
++75a672f158e2e2e936c3faa48b035a6d
++e17beaac23b5f03b10b868d53d03521d
++8ba115059da777a60cbfd7b2c9c57472
++78a15b8f6e68a3ef7fd583ec9f398c8b
++d4735dab40cbd1e3c62a822e97489186
++c30a0b48c7c38ea32ceb056d3fa5a710
++e10ccc7a0ddb363b08c3d2777a3395e1
++0c0b6080f56309192ab5aacd4b45f55d
++a61fc77af39bd81a19218a79762c3386
++2df55785075f37d8c71dc8a42097ee43
++344739a0dd48d03025b0450cf1fb5e8c
++aeb893d9a96d1f15519bb3c4dcb40ee3
++16672ea16c012664f8a9f11255518deb
++-----END OpenVPN Static key V1-----
++"""
++
+ OPENVPN_V2_TEMPLATE = """
+ # ==============================================================================
+ # Copyright (c) 2016-2020 Proton Technologies AG (Switzerland)
+@@ -116,32 +138,11 @@ auth-user-pass
+ pull
+ fast-io
+
+-<ca>
+-{{ca_certificate}}
+-</ca>
++ca {{ca_certificate}}
+
+ key-direction 1
+-<tls-auth>
+-# 2048 bit OpenVPN static key
+------BEGIN OpenVPN Static key V1-----
+-6acef03f62675b4b1bbd03e53b187727
+-423cea742242106cb2916a8a4c829756
+-3d22c7e5cef430b1103c6f66eb1fc5b3
+-75a672f158e2e2e936c3faa48b035a6d
+-e17beaac23b5f03b10b868d53d03521d
+-8ba115059da777a60cbfd7b2c9c57472
+-78a15b8f6e68a3ef7fd583ec9f398c8b
+-d4735dab40cbd1e3c62a822e97489186
+-c30a0b48c7c38ea32ceb056d3fa5a710
+-e10ccc7a0ddb363b08c3d2777a3395e1
+-0c0b6080f56309192ab5aacd4b45f55d
+-a61fc77af39bd81a19218a79762c3386
+-2df55785075f37d8c71dc8a42097ee43
+-344739a0dd48d03025b0450cf1fb5e8c
+-aeb893d9a96d1f15519bb3c4dcb40ee3
+-16672ea16c012664f8a9f11255518deb
+------END OpenVPN Static key V1-----
+-</tls-auth>
++tls-auth {{tls_auth}}
++
+
+ {%- if certificate_based %}
+ <cert>
+diff -rupN original/proton/vpn/connection/vpnconfiguration.py proton/vpn/connection/vpnconfiguration.py
+--- original/proton/vpn/connection/vpnconfiguration.py	2023-07-16 11:56:03.587901167 +0700
++++ proton/vpn/connection/vpnconfiguration.py	2023-07-16 11:47:08.893291587 +0700
+@@ -28,8 +28,9 @@ from jinja2 import Environment, BaseLoad
+ from proton.utils.environment import ExecutionEnvironment
+
+ from proton.vpn.connection.constants import \
+-    CA_CERT, OPENVPN_V2_TEMPLATE, WIREGUARD_TEMPLATE
++    TLS_AUTH, CA_CERT, OPENVPN_V2_TEMPLATE, WIREGUARD_TEMPLATE
+ from proton.vpn.connection.interfaces import Settings
++from proton.vpn.core_api import certificate
+
+
+ class DefaultSettings(Settings):
+@@ -132,12 +133,13 @@ class OVPNConfig(VPNConfiguration):
+             string: configuration file
+         """
+         ports = self._vpnserver.tcp_ports if "tcp" == self._protocol else self._vpnserver.udp_ports
+-
++        certificate.check()
+         j2_values = {
+             "openvpn_protocol": self._protocol,
+             "serverlist": [self._vpnserver.server_ip],
+             "openvpn_ports": ports,
+-            "ca_certificate": CA_CERT,
++            "ca_certificate": certificate.CA_CERT,
++            "tls_auth": certificate.TLS_AUTH,
+             "certificate_based": self.use_certificate,
+             "custom_dns": len(self.settings.dns_custom_ips) > 0,
+         }
+diff -rupN original/proton/vpn/core_api/certificate.py proton/vpn/core_api/certificate.py
+--- original/proton/vpn/core_api/certificate.py	1970-01-01 07:00:00.000000000 +0700
++++ proton/vpn/core_api/certificate.py	2023-07-16 11:51:35.060600328 +0700
+@@ -0,0 +1,38 @@
++import os.path
++
++from proton.utils.environment import VPNExecutionEnvironment
++from proton.vpn.connection import constants
++
++CA_CERT = os.path.join(
++    VPNExecutionEnvironment().path_config,
++    "ProtonVPN-ca.pem"
++)
++
++TLS_AUTH = os.path.join(
++    VPNExecutionEnvironment().path_config,
++    "ProtonVPN-tls-auth.pem"
++)
++
++
++# This is the function that is called to check if the certificate files exist and correct.
++def check():
++    if os.path.isfile(CA_CERT) and os.path.isfile(TLS_AUTH):
++        with open(CA_CERT, "rb") as f:
++            if f.read() != constants.CA_CERT:
++                write()
++                return False
++        with open(TLS_AUTH, "rb") as f:
++            if f.read() != constants.TLS_AUTH:
++                write()
++                return False
++        return True
++    else:
++        write()
++        return False
++
++
++def write():
++    with open(CA_CERT, "w") as f:
++        f.write(constants.CA_CERT)
++    with open(TLS_AUTH, "w") as f:
++        f.write(constants.TLS_AUTH)
