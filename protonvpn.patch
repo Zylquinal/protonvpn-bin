@@ -119,11 +119,11 @@ diff -rupN original/proton/vpn/core_api/certificate.py proton/vpn/core_api/certi
 +# This is the function that is called to check if the certificate files exist and correct.
 +def check():
 +    if os.path.isfile(CA_CERT) and os.path.isfile(TLS_AUTH):
-+        with open(CA_CERT, "rb") as f:
++        with open(CA_CERT, "r") as f:
 +            if f.read() != constants.CA_CERT:
 +                write()
 +                return False
-+        with open(TLS_AUTH, "rb") as f:
++        with open(TLS_AUTH, "r") as f:
 +            if f.read() != constants.TLS_AUTH:
 +                write()
 +                return False
