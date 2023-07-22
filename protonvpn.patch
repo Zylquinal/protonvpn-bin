@@ -1,10 +1,147 @@
+diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py
+--- original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py	2023-07-22 13:27:07.707944065 +0700
++++ proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py	2023-07-22 12:27:06.860621268 +0700
+@@ -19,6 +19,7 @@ GNU General Public License for more deta
+ You should have received a copy of the GNU General Public License
+ along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
+ """
++from concurrent.futures import Future
+ 
+ from gi.repository import Gtk
+ from proton.vpn.app.gtk.controller import Controller
+@@ -26,6 +27,8 @@ from proton.vpn.app.gtk.widgets.main.not
+ from proton.vpn.app.gtk.widgets.headerbar.menu.settings.common import (
+     RECONNECT_MESSAGE, CategoryHeader, SettingRow, SettingName, SettingDescription
+ )
++from proton.vpn.core_api.settings import KillSwitchMode
++from proton.vpn.killswitch.interface import KillSwitch
+ 
+ 
+ class ConnectionSettings(Gtk.Box):
+@@ -35,6 +38,8 @@ class ConnectionSettings(Gtk.Box):
+     VPN_ACCELERATOR_LABEL = "VPN Accelerator"
+     VPN_ACCELERATOR_DESCRIPTION = "Increase your connection speed by up to 400% "\
+         "with performance enhancing technologies."
++    KILL_SWITCH_LABEL = "VPN Kill Switch"
++    KILL_SWITCH_DESCRIPTION = "Automatically block all internet traffic "
+ 
+     def __init__(self, controller: Controller, notification_bar: NotificationBar):
+         super().__init__(orientation=Gtk.Orientation.VERTICAL)
+@@ -47,6 +52,8 @@ class ConnectionSettings(Gtk.Box):
+         self.vpn_accelerator_row = None
+         self.protocol_row = None
+ 
++        self.kill_switch_row = None
++
+         self.get_style_context().add_class("setting-category")
+ 
+     def build_ui(self):
+@@ -55,6 +62,7 @@ class ConnectionSettings(Gtk.Box):
+         self.pack_start(CategoryHeader(self.CATEGORY_NAME), False, False, 0)
+         self.build_protocol()
+         self.build_vpn_accelerator()
++        self.build_kill_switch()
+ 
+     @property
+     def protocol(self) -> str:
+@@ -80,6 +88,18 @@ class ConnectionSettings(Gtk.Box):
+         self._controller.get_settings().features.vpn_accelerator = newvalue
+         self._controller.save_settings()
+ 
++    @property
++    def kill_switch(self) -> KillSwitchMode:
++        """Shortcut property that returns the current `kill_switch` setting"""
++        return self._controller.get_settings().features.kill_switch
++
++    @kill_switch.setter
++    def kill_switch(self, newvalue: KillSwitchMode):
++        """Shortcut property that sets the new `kill_switch` setting and
++        stores to disk."""
++        self._controller.get_settings().features.kill_switch = newvalue
++        self._controller.save_settings()
++
+     def build_protocol(self):
+         """Builds and adds the `protocol` setting to the widget."""
+         def on_combobox_changed(combobox):
+@@ -142,3 +162,70 @@ class ConnectionSettings(Gtk.Box):
+         vpn_accelerator_switch.set_state(self.vpn_accelerator)
+         vpn_accelerator_switch.connect("state-set", on_switch_state)
+         self.pack_start(self.vpn_accelerator_row, False, False, 0)
++
++    def build_kill_switch(self):
++        """Builds and adds the `kill_switch` setting to the widget."""
++
++        def on_combobox_change(combobox):
++            model = combobox.get_model()
++            treeiter = combobox.get_active_iter()
++            old_kill_switch = self.kill_switch
++            self.kill_switch = int(model[treeiter][1])
++            ks_instance: KillSwitch = KillSwitch.get()()
++
++            def _on_enable(_future: Future):
++                _future.result()
++
++            active = self._controller.is_connection_active
++            if self.kill_switch == KillSwitchMode.HARD:
++                future_ipv4 = ks_instance.enable()
++                future_ipv4.add_done_callback(_on_enable)
++
++                future_ipv6 = ks_instance.enable_ipv6_leak_protection()
++                future_ipv6.add_done_callback(_on_enable)
++
++                if active:
++                    self._notification_bar.show_info_message(
++                        f"{RECONNECT_MESSAGE}"
++                    )
++            elif old_kill_switch == KillSwitchMode.HARD:
++                if self.kill_switch == KillSwitchMode.DISABLED or (self.kill_switch == KillSwitchMode.SOFT and not active):
++                    future_ipv4 = ks_instance.disable()
++                    future_ipv4.add_done_callback(_on_enable)
++
++                    future_ipv6 = ks_instance.disable_ipv6_leak_protection()
++                    future_ipv6.add_done_callback(_on_enable)
++
++                    future_route = ks_instance.disable_route()
++                    future_route.add_done_callback(_on_enable)
++            else:
++                if active:
++                    self._notification_bar.show_info_message(
++                        f"{RECONNECT_MESSAGE}"
++                    )
++
++
++        ks_combobox = Gtk.ComboBoxText()
++        ks_combobox.set_hexpand(True)
++        ks_combobox.set_halign(Gtk.Align.END)
++
++        human_readable_switch = {
++            KillSwitchMode.DISABLED: "Disabled",
++            KillSwitchMode.SOFT: "Soft",
++            KillSwitchMode.HARD: "Hard"
++        }
++
++        for ks_mode in human_readable_switch:
++            ks_combobox.append(str(ks_mode), human_readable_switch[ks_mode])
++
++        ks_combobox.set_entry_text_column(1)
++        ks_combobox.set_active_id(str(self.kill_switch))
++        ks_combobox.connect("changed", on_combobox_change)
++
++        self.kill_switch_row = SettingRow(
++            SettingName(self.KILL_SWITCH_LABEL),
++            ks_combobox,
++            SettingDescription(self.KILL_SWITCH_DESCRIPTION)
++        )
++
++        self.pack_start(self.kill_switch_row, False, False, 0)
+\ No newline at end of file
 diff -rupN original/proton/vpn/connection/constants.py proton/vpn/connection/constants.py
---- original/proton/vpn/connection/constants.py	2023-07-16 11:56:03.587901167 +0700
-+++ proton/vpn/connection/constants.py	2023-07-16 11:49:54.538108888 +0700
+--- original/proton/vpn/connection/constants.py	2023-07-22 13:27:07.720944148 +0700
++++ proton/vpn/connection/constants.py	2023-07-20 10:22:48.353370956 +0700
 @@ -55,6 +55,28 @@ A1gTTlpi7A==
  -----END CERTIFICATE-----
  """
-
+ 
 +# 2048 bit OpenVPN static key
 +TLS_AUTH = """
 +-----BEGIN OpenVPN Static key V1-----
@@ -33,12 +170,12 @@ diff -rupN original/proton/vpn/connection/constants.py proton/vpn/connection/con
 @@ -116,32 +138,11 @@ auth-user-pass
  pull
  fast-io
-
+ 
 -<ca>
 -{{ca_certificate}}
 -</ca>
 +ca {{ca_certificate}}
-
+ 
  key-direction 1
 -<tls-auth>
 -# 2048 bit OpenVPN static key
@@ -63,22 +200,189 @@ diff -rupN original/proton/vpn/connection/constants.py proton/vpn/connection/con
 -</tls-auth>
 +tls-auth {{tls_auth}}
 +
-
+ 
  {%- if certificate_based %}
  <cert>
+diff -rupN original/proton/vpn/connection/interfaces.py proton/vpn/connection/interfaces.py
+--- original/proton/vpn/connection/interfaces.py	2023-07-22 13:27:07.720944148 +0700
++++ proton/vpn/connection/interfaces.py	2023-07-20 19:29:53.148907931 +0700
+@@ -156,6 +156,14 @@ class Features:
+         return None
+ 
+     @property
++    def kill_switch(self):
++        """
++        :return: kill switch state value
++        :rtype: KillSwitchMode
++        """
++        return None
++
++    @property
+     def port_forwarding(self):
+         """
+         :return: port forwarding state value
+diff -rupN original/proton/vpn/connection/states.py proton/vpn/connection/states.py
+--- original/proton/vpn/connection/states.py	2023-07-22 13:27:07.720944148 +0700
++++ proton/vpn/connection/states.py	2023-07-22 13:23:01.025316484 +0700
+@@ -21,6 +21,7 @@ along with ProtonVPN.  If not, see <http
+ """
+ from __future__ import annotations
+ 
++import time
+ from abc import ABC, abstractmethod
+ from dataclasses import dataclass
+ from typing import TYPE_CHECKING, Optional
+@@ -31,11 +32,11 @@ from proton.vpn.connection import events
+ from proton.vpn.connection.enum import ConnectionStateEnum
+ from proton.vpn.connection.events import EventContext
+ from proton.vpn.connection.exceptions import ConcurrentConnectionsError
++from proton.vpn.core_api.settings import KillSwitchMode
+ 
+ if TYPE_CHECKING:
+     from proton.vpn.connection.vpnconnection import VPNConnection
+ 
+-
+ # pylint: disable=too-few-public-methods
+ 
+ 
+@@ -159,13 +160,24 @@ class Disconnected(State):
+             # IMPORTANT: in this case, the kill switch is **not** disabled.
+             return events.Up(EventContext(connection=self.context.reconnection))
+ 
+-        def _on_ipv6_leak_protection_disabled(_future: Future):
++        ks_mode = self.context.connection.settings.features.kill_switch
++
++        def _on_call_back(_future: Future):
+             _future.result()
+ 
+         # When the state machine is in disconnected state, a VPN connection
+         # may have not been created yet.
+-        future = self.context.connection.disable_ipv6_leak_protection()
+-        future.add_done_callback(_on_ipv6_leak_protection_disabled)
++
++        if ks_mode < KillSwitchMode.HARD:
++            future_ipv6 = self.context.connection.disable_ipv6_leak_protection()
++            future_ipv6.add_done_callback(_on_call_back)
++
++            future_ipv4 = self.context.connection.disable_leak_protection()
++            future_ipv4.add_done_callback(_on_call_back)
++
++        future_route = self.context.connection.disable_route()
++        future_route.add_done_callback(_on_call_back)
++
+         self.context.connection.remove_persistence()
+         return None
+ 
+@@ -176,6 +188,9 @@ class Connecting(State):
+     """
+     type = ConnectionStateEnum.CONNECTING
+ 
++    def __init__(self, context: StateContext = None):
++        super().__init__(context)
++
+     def _on_event(self, event: events.Event):
+         if isinstance(event, events.Connected):
+             return Connected(StateContext(event=event, connection=event.context.connection))
+@@ -206,12 +221,44 @@ class Connecting(State):
+         return self
+ 
+     def run_tasks(self):
+-        def _on_ipv6_leak_protection_enabled(_future: Future):
++        ks_mode: KillSwitchMode = self.context.connection.settings.features.kill_switch
++
++        def _on_disabled_task(_future: Future):
+             _future.result()
+             self.context.connection.start()
+ 
+-        future = self.context.connection.enable_ipv6_leak_protection()
+-        future.add_done_callback(_on_ipv6_leak_protection_enabled)
++        def _on_soft_task(_future: Future):
++
++            def _start_connection(_future: Future):
++                _future.result()
++                self.context.connection.start()
++
++            _future.result()
++            self.context.connection.enable_route().add_done_callback(_start_connection)
++
++        def _on_hard_task(_future: Future):
++
++            def _pre_connection(_future: Future):
++                _future.result()
++                self.context.connection.disable_leak_protection().add_done_callback(_start_connection)
++
++            def _start_connection(_future: Future):
++                _future.result()
++                time.sleep(3)  # Prevent timeout, as the change may take some time
++                self.context.connection.start()
++
++            _future.result()
++            self.context.connection.enable_route().add_done_callback(_pre_connection)
++
++        future_ipv6 = self.context.connection.enable_ipv6_leak_protection()
++
++        match ks_mode:
++            case KillSwitchMode.DISABLED:
++                future_ipv6.add_done_callback(_on_disabled_task)
++            case KillSwitchMode.SOFT:
++                future_ipv6.add_done_callback(_on_soft_task)
++            case KillSwitchMode.HARD:
++                future_ipv6.add_done_callback(_on_hard_task)
+ 
+ 
+ class Connected(State):
+@@ -248,6 +295,38 @@ class Connected(State):
+         return self
+ 
+     def run_tasks(self):
++        ks_mode = self.context.connection.settings.features.kill_switch
++
++        def _on_hard_task():
++
++            def _on_connected(_future: Future):
++                _future.result()
++                self.context.connection.disable_route().add_done_callback(_on_done)
++
++            def _on_done(_future: Future):
++                _future.result()
++
++            self.context.connection.enable_leak_protection().add_done_callback(_on_connected)
++
++        def _on_soft_task():
++
++            def _on_connected(_future: Future):
++                _future.result()
++                self.context.connection.disable_route().add_done_callback(_on_done)
++
++            def _on_done(_future: Future):
++                _future.result()
++
++            self.context.connection.enable_leak_protection().add_done_callback(_on_connected)
++
++        match ks_mode:
++            case KillSwitchMode.DISABLED:
++                pass
++            case KillSwitchMode.SOFT:
++                _on_soft_task()
++            case KillSwitchMode.HARD:
++                _on_hard_task()
++
+         self.context.connection.add_persistence()
+ 
+ 
 diff -rupN original/proton/vpn/connection/vpnconfiguration.py proton/vpn/connection/vpnconfiguration.py
---- original/proton/vpn/connection/vpnconfiguration.py	2023-07-16 11:56:03.587901167 +0700
-+++ proton/vpn/connection/vpnconfiguration.py	2023-07-16 11:47:08.893291587 +0700
+--- original/proton/vpn/connection/vpnconfiguration.py	2023-07-22 13:27:07.720944148 +0700
++++ proton/vpn/connection/vpnconfiguration.py	2023-07-20 10:22:48.352370956 +0700
 @@ -28,8 +28,9 @@ from jinja2 import Environment, BaseLoad
  from proton.utils.environment import ExecutionEnvironment
-
+ 
  from proton.vpn.connection.constants import \
 -    CA_CERT, OPENVPN_V2_TEMPLATE, WIREGUARD_TEMPLATE
 +    TLS_AUTH, CA_CERT, OPENVPN_V2_TEMPLATE, WIREGUARD_TEMPLATE
  from proton.vpn.connection.interfaces import Settings
 +from proton.vpn.core_api import certificate
-
-
+ 
+ 
  class DefaultSettings(Settings):
 @@ -132,12 +133,13 @@ class OVPNConfig(VPNConfiguration):
              string: configuration file
@@ -96,9 +400,55 @@ diff -rupN original/proton/vpn/connection/vpnconfiguration.py proton/vpn/connect
              "certificate_based": self.use_certificate,
              "custom_dns": len(self.settings.dns_custom_ips) > 0,
          }
+diff -rupN original/proton/vpn/connection/vpnconnection.py proton/vpn/connection/vpnconnection.py
+--- original/proton/vpn/connection/vpnconnection.py	2023-07-22 13:27:07.720944148 +0700
++++ proton/vpn/connection/vpnconnection.py	2023-07-20 14:51:25.358409503 +0700
+@@ -304,6 +304,42 @@ class VPNConnection(ABC):
+         """
+         self._connection_persistence.remove()
+ 
++    def enable_leak_protection(self) -> Future:
++        """
++        Prevents IP leaks.
++
++        This method should be called before establishing VPN connections,
++        so that no traffic leaks through the physical interface while connected
++        to the VPN.
++        """
++        return self._killswitch.enable()
++
++    def disable_leak_protection(self) -> Future:
++        """
++        Stops preventing IP leaks.
++
++        This method should be called after the user willingly ends a VPN connection.
++        """
++        return self._killswitch.disable()
++
++    def enable_route(self) -> Future:
++        """
++        Prevents IP leaks.
++
++        This method should be called before establishing VPN connections,
++        so that no traffic leaks through the physical interface while connected
++        to the VPN.
++        """
++        return self._killswitch.enable_route(self._vpnserver)
++
++    def disable_route(self) -> Future:
++        """
++        Stops preventing IP leaks.
++
++        This method should be called after the user willingly ends a VPN connection.
++        """
++        return self._killswitch.disable_route()
++
+     def enable_ipv6_leak_protection(self) -> Future:
+         """
+         Prevents IPv6 leaks.
 diff -rupN original/proton/vpn/core_api/certificate.py proton/vpn/core_api/certificate.py
 --- original/proton/vpn/core_api/certificate.py	1970-01-01 07:00:00.000000000 +0700
-+++ proton/vpn/core_api/certificate.py	2023-07-16 11:51:35.060600328 +0700
++++ proton/vpn/core_api/certificate.py	2023-07-20 10:22:48.351370957 +0700
 @@ -0,0 +1,38 @@
 +import os.path
 +
@@ -138,3 +488,523 @@ diff -rupN original/proton/vpn/core_api/certificate.py proton/vpn/core_api/certi
 +        f.write(constants.CA_CERT)
 +    with open(TLS_AUTH, "w") as f:
 +        f.write(constants.TLS_AUTH)
+diff -rupN original/proton/vpn/core_api/settings.py proton/vpn/core_api/settings.py
+--- original/proton/vpn/core_api/settings.py	2023-07-22 13:27:07.718944135 +0700
++++ proton/vpn/core_api/settings.py	2023-07-22 13:41:26.669099394 +0700
+@@ -36,6 +36,12 @@ class NetShield(IntEnum):  # pylint: dis
+     BLOCK_ADS_AND_TRACKING = 2
+ 
+ 
++class KillSwitchMode(IntEnum):
++    DISABLED = 0
++    SOFT = 1
++    HARD = 2
++
++
+ SETTINGS = os.path.join(
+     VPNExecutionEnvironment().path_config,
+     "settings.json"
+@@ -51,6 +57,7 @@ class Features:
+     netshield: NetShield
+     random_nat: bool
+     vpn_accelerator: bool
++    kill_switch: KillSwitchMode
+     port_forwarding: bool
+ 
+     @staticmethod
+@@ -62,6 +69,7 @@ class Features:
+             netshield=data.get("netshield", default.netshield),
+             random_nat=data.get("random_nat", default.random_nat),
+             vpn_accelerator=data.get("vpn_accelerator", default.vpn_accelerator),
++            kill_switch=data.get("kill_switch", default.kill_switch),
+             port_forwarding=data.get("port_forwarding", default.port_forwarding),
+         )
+ 
+@@ -76,6 +84,7 @@ class Features:
+             ),
+             random_nat=True,
+             vpn_accelerator=True,
++            kill_switch=KillSwitchMode.DISABLED,
+             port_forwarding=False
+         )
+ 
+diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py
+--- original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py	2023-07-22 13:27:07.722944160 +0700
++++ proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py	2023-07-22 13:47:58.913350106 +0700
+@@ -19,11 +19,14 @@ GNU General Public License for more deta
+ You should have received a copy of the GNU General Public License
+ along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
+ """
++from ipaddress import ip_network
+ from concurrent.futures import Future
++
++from proton.session.transports import AlternativeRoutingTransport
+ from proton.vpn import logging
+ from proton.vpn.killswitch.backend.linux.networkmanager.nmclient import NMClient
+ from proton.vpn.killswitch.backend.linux.networkmanager.killswitch_connection import (
+-    KillSwitchConnection, KillSwitchGeneralConfig, KillSwitchIPConfig
++    KillSwitchConnection, KillSwitchGeneralConfig, KillSwitchIPConfig, ip_route
+ )
+ 
+ logger = logging.getLogger(__name__)
+@@ -34,6 +37,9 @@ INTERFACE_NAME = "pvpnksintrf0"
+ IPV6_HUMAN_READABLE_ID = "pvpn-killswitch-ipv6"
+ IPV6_INTERFACE_NAME = "ipv6leakintrf0"
+ 
++ROUTE_HUMAN_READABLE_ID = "pvpn-killswitch-route"
++ROUTE_INTERFACE_NAME = "pvpnksroute0"
++
+ 
+ class KillSwitchConnectionHandler:
+     """Kill switch connection management."""
+@@ -57,21 +63,104 @@ class KillSwitchConnectionHandler:
+     @property
+     def is_killswitch_connection_active(self) -> bool:
+         """Returns if general kill switch is active or not."""
+-        return False
++        return bool(self.nm_client.get_active_connection(HUMAN_READABLE_ID))
+ 
+-    def add(self, server_ip: str):
++    def add(self) -> Future:
+         """Adds general kill switch to NetworkManager"""
+-        raise NotImplementedError
++        general_config = KillSwitchGeneralConfig(
++            human_readable_id=HUMAN_READABLE_ID,
++            interface_name=INTERFACE_NAME
++        )
++        ipv4_config = KillSwitchIPConfig(
++            addresses=["10.18.0.1/16"],
++            dns=["0.0.0.0"],
++            dns_priority=-1400,
++            gateway="10.18.0.1",
++            ignore_auto_dns=True,
++            route_metric=97
++        )
++
++        ipv6_config = KillSwitchIPConfig(
++            addresses=["fdeb:446c:912d:08da::/64"],
++            dns=["::1"],
++            dns_priority=-1400,
++            gateway="fdeb:446c:912d:08da::1",
++            ignore_auto_dns=True,
++            route_metric=97
++        )
++
++        kill_switch = KillSwitchConnection(
++            general_config,
++            ipv4_settings=ipv4_config,
++            ipv6_settings=ipv6_config
++        )
++        logger.info("Enabling general kill switch...")
++        future = self.nm_client.add_connection_async(kill_switch.connection)
++        return future
+ 
+-    def remove(self):
++    def remove(self) -> Future:
+         """Removes general kill switch from NetworkManager."""
+-        raise NotImplementedError
++        connection = self.nm_client.get_connection(HUMAN_READABLE_ID)
++        future = self.nm_client.remove_connection_async(connection)
++        return future
+ 
+     def update(self, server_ip: str):
+         """Update the general kill switch."""
+         raise NotImplementedError
+ 
+     @property
++    def is_route_killswitch_connection_active(self) -> bool:
++        """Returns if route kill switch is active or not."""
++        return bool(self.nm_client.get_active_connection(ROUTE_HUMAN_READABLE_ID))
++
++    def add_ks_route(self, server_ip: str) -> Future:
++        """Adds route kill switch to NetworkManager"""
++
++        # exclude local network
++        subnets = ip_network("0.0.0.0/0").address_exclude(ip_network(server_ip))
++
++        # merge subnets
++        routes = [ip_route(str(route)) for route in list(subnets)]
++
++        general_config = KillSwitchGeneralConfig(
++            human_readable_id=ROUTE_HUMAN_READABLE_ID,
++            interface_name=ROUTE_INTERFACE_NAME
++        )
++
++        ipv4_config = KillSwitchIPConfig(
++            addresses=["100.85.0.1/24"],
++            dns=["0.0.0.0"],
++            dns_priority=-1400,
++            gateway="100.85.0.1",
++            ignore_auto_dns=True,
++            route_metric=2000,
++            routes=routes
++        )
++
++        ipv6_config = KillSwitchIPConfig(
++            addresses=["fdeb:446c:912d:08da::/64"],
++            dns=["::1"],
++            dns_priority=-1400,
++            gateway="fdeb:446c:912d:08da::1",
++            ignore_auto_dns=True,
++            route_metric=97
++        )
++
++        killswitch = KillSwitchConnection(
++            general_config,
++            ipv4_settings=ipv4_config,
++            ipv6_settings=ipv6_config
++        )
++        future = self.nm_client.add_connection_async(killswitch.connection)
++        return future
++
++    def remove_ks_route(self) -> Future:
++        """Removes route kill switch from NetworkManager."""
++        connection = self.nm_client.get_connection(ROUTE_HUMAN_READABLE_ID)
++        future = self.nm_client.remove_connection_async(connection)
++        return future
++
++    @property
+     def is_ipv6_leak_protection_connection_active(self) -> bool:
+         """Returns if IPv6 kill switch is active or not."""
+         return bool(self.nm_client.get_active_connection(IPV6_HUMAN_READABLE_ID))
+@@ -89,7 +178,7 @@ class KillSwitchConnectionHandler:
+             dns_priority=-1400,
+             gateway="fdeb:446c:912d:08da::1",
+             ignore_auto_dns=True,
+-            route_metric=97
++            route_metric=95
+         )
+         killswitch = KillSwitchConnection(
+             general_config,
+@@ -103,3 +192,4 @@ class KillSwitchConnectionHandler:
+         connection = self.nm_client.get_connection(conn_id=IPV6_HUMAN_READABLE_ID)
+         future = self.nm_client.remove_connection_async(connection)
+         return future
++
+diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py
+--- original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py	2023-07-22 13:27:07.722944160 +0700
++++ proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py	2023-07-22 12:50:07.113690747 +0700
+@@ -32,14 +32,29 @@ class KillSwitchGeneralConfig:  # pylint
+ 
+ 
+ @dataclass
++class KillSwitchIPRoute:
++    destination: str
++    hop: str
++    metric: int
++
++
++def ip_route(destination: str, hop: str = None, metric: int = -1) -> KillSwitchIPRoute:
++    return KillSwitchIPRoute(
++        destination,
++        hop,
++        metric
++    )
++
++
++@dataclass
+ class KillSwitchIPConfig:  # pylint: disable=missing-class-docstring
+     addresses: list
+     dns: list
+-    dns_priority: str
++    dns_priority: int
+     ignore_auto_dns: bool
+-    route_metric: str
++    route_metric: int
+     gateway: str = None
+-    routes: list = field(default_factory=list)
++    routes: list[KillSwitchIPRoute] | list[str] = field(default_factory=list)
+ 
+ 
+ class KillSwitchConnection:  # pylint: disable=too-few-public-methods
+@@ -50,7 +65,7 @@ class KillSwitchConnection:  # pylint: d
+     def __init__(
+         self,
+         general_settings: KillSwitchGeneralConfig,
+-        ipv6_settings: KillSwitchIPConfig,
++        ipv6_settings: KillSwitchIPConfig = None,
+         ipv4_settings: KillSwitchIPConfig = None
+     ):
+         self._connection_profile = None
+@@ -88,7 +103,7 @@ class KillSwitchConnection:  # pylint: d
+         self._connection_profile.add_setting(s_ipv6)
+         self._connection_profile.add_setting(s_dummy)
+ 
+-    def _generate_ipv4_settings(self):
++    def _generate_ipv4_settings(self) -> NM.SettingIP4Config:
+         """
+         For documentaion see:
+         https://lazka.github.io/pgi-docs/index.html#NM-1.0/classes/SettingIPConfig.html#NM.SettingIPConfig
+@@ -116,11 +131,11 @@ class KillSwitchConnection:  # pylint: d
+ 
+         if self._ipv4_settings.routes:
+             for route in self._ipv4_settings.routes:
+-                ip, prefix = route.split("/")  # pylint: disable=invalid-name
++                ip, prefix = route.destination.split("/")
+                 s_ip4.add_route(
+                     NM.IPRoute.new(
+                         family=GLib.SYSDEF_AF_INET, dest=ip, prefix=int(prefix),
+-                        next_hop=None, metric=-1
++                        next_hop=route.hop, metric=route.metric
+                     )
+                 )
+ 
+diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py
+--- original/proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py	2023-07-22 13:27:07.722944160 +0700
++++ proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py	2023-07-22 13:45:29.544496321 +0700
+@@ -23,6 +23,9 @@ import sys
+ from concurrent.futures import Future
+ 
+ import gi
++
++from proton.vpn.connection import VPNServer
++
+ gi.require_version("NM", "1.0")  # noqa: required before importing NM module
+ # pylint: disable=wrong-import-position
+ from gi.repository import GLib # noqa
+@@ -54,27 +57,105 @@ class NMKillSwitch(KillSwitch):
+         self._ks_handler = ks_handler or KillSwitchConnectionHandler()
+         super().__init__()
+ 
+-    def enable(self, vpn_server):
++    def enable(self) -> Future:
+         """Enables general kill switch."""
+-        if not self._ks_handler.is_killswitch_connection_active:
+-            # Currently we assume the server IP is and IPv4 address.
+-            self._ks_handler.add(vpn_server.server_ip)
++        custom_future = Future()
+ 
+-        if not self._ks_handler.is_killswitch_connection_active:
+-            raise KillSwitchException("Kill Switch is not running")
++        if self._ks_handler.is_killswitch_connection_active:
++            custom_future.set_result(None)
++            return custom_future
+ 
+-    def disable(self):
++        def _on_killswitch_enabled(_future: Future):
++            try:
++                _future.result()
++                logger.info("Enabled general kill switch...")
++                custom_future.set_result(None)
++            except GLib.GError:
++                traceback = sys.exc_info()[2]
++                custom_future.set_exception(
++                    KillSwitchException(
++                        "Unable to add general kill switch"
++                    ).with_traceback(traceback)
++                )
++        future = self._ks_handler.add()
++        future.add_done_callback(_on_killswitch_enabled)
++        return custom_future
++
++    def disable(self) -> Future:
+         """Disables general kill switch."""
+-        if self._ks_handler.is_killswitch_connection_active:
+-            self._ks_handler.remove()
++        custom_future = Future()
++        if not self._ks_handler.is_killswitch_connection_active:
++            custom_future.set_result(None)
++            return custom_future
+ 
+-        if self._ks_handler.is_killswitch_connection_active:
+-            raise KillSwitchException("Kill Switch is not running")
++        def _on_killswitch_disabled(_future: Future):
++            try:
++                _future.result()
++                logger.info("Removed general kill switch...")
++                custom_future.set_result(None)
++            except GLib.GError:
++                traceback = sys.exc_info()[2]
++                custom_future.set_exception(
++                    KillSwitchException(
++                        "Unable to remove general kill switch"
++                    ).with_traceback(traceback)
++                )
++        future = self._ks_handler.remove()
++        future.add_done_callback(_on_killswitch_disabled)
++        return custom_future
+ 
+     def update(self, vpn_server):
+         """Currently not being used"""
+         raise NotImplementedError
+ 
++    def enable_route(self, vpn_server: VPNServer) -> Future:
++        """Enables IPv4 kill switch."""
++        custom_future = Future()
++
++        if self._ks_handler.is_route_killswitch_connection_active:
++            custom_future.set_result(None)
++            return custom_future
++
++        def _on_route_enabled(_future: Future):
++            try:
++                _future.result()
++                logger.info("Enabled kill switch route...")
++                custom_future.set_result(None)
++            except GLib.GError:
++                traceback = sys.exc_info()[2]
++                custom_future.set_exception(
++                    KillSwitchException(
++                        "Unable to add kill switch route"
++                    ).with_traceback(traceback)
++                )
++
++        future = self._ks_handler.add_ks_route(vpn_server.server_ip)
++        future.add_done_callback(_on_route_enabled)
++        return custom_future
++
++    def disable_route(self) -> Future:
++        custom_future = Future()
++        if not self._ks_handler.is_route_killswitch_connection_active:
++            custom_future.set_result(None)
++            return custom_future
++
++        def _on_route_disabled(_future: Future):
++            try:
++                _future.result()
++                logger.info("Removed kill switch route...")
++                custom_future.set_result(None)
++            except GLib.GError:
++                traceback = sys.exc_info()[2]
++                custom_future.set_exception(
++                    KillSwitchException(
++                        "Unable to remove kill switch route"
++                    ).with_traceback(traceback)
++                )
++
++        future = self._ks_handler.remove_ks_route()
++        future.add_done_callback(_on_route_disabled)
++        return custom_future
++
+     def enable_ipv6_leak_protection(self) -> Future:
+         """Enables IPv6 kill switch."""
+         custom_future = Future()
+@@ -86,6 +167,7 @@ class NMKillSwitch(KillSwitch):
+         def _on_ivp6_leak_protection_enabled(_future: Future):
+             try:
+                 _future.result()
++                logger.info("Enabled ipv6 leak protection...")
+                 custom_future.set_result(None)
+             except GLib.GError:
+                 traceback = sys.exc_info()[2]
+@@ -94,7 +176,6 @@ class NMKillSwitch(KillSwitch):
+                         "Unable to add IPv6 connection"
+                     ).with_traceback(traceback)
+                 )
+-
+         future = self._ks_handler.add_ipv6_leak_protection()
+         future.add_done_callback(_on_ivp6_leak_protection_enabled)
+         return custom_future
+@@ -109,6 +190,7 @@ class NMKillSwitch(KillSwitch):
+         def _on_ivp6_leak_protection_disabled(_future: Future):
+             try:
+                 _future.result()
++                logger.info("Removed ipv6 leak protection...")
+                 custom_future.set_result(None)
+             except GLib.GError:
+                 traceback = sys.exc_info()[2]
+@@ -117,7 +199,6 @@ class NMKillSwitch(KillSwitch):
+                         "Unable to remove IPv6 connection"
+                     ).with_traceback(traceback)
+                 )
+-
+         future = self._ks_handler.remove_ipv6_leak_protection()
+         future.add_done_callback(_on_ivp6_leak_protection_disabled)
+         return custom_future
+diff -rupN original/proton/vpn/killswitch/interface/killswitch.py proton/vpn/killswitch/interface/killswitch.py
+--- original/proton/vpn/killswitch/interface/killswitch.py	2023-07-22 13:27:07.721944154 +0700
++++ proton/vpn/killswitch/interface/killswitch.py	2023-07-22 10:11:26.973353094 +0700
+@@ -47,7 +47,7 @@ class KillSwitch:
+         except RuntimeError as excp:
+             raise MissingKillSwitchBackendDetails(excp) from excp
+ 
+-    def enable(self, vpn_server):
++    def enable(self):
+         """
+         Enables the kill switch.
+ 
+@@ -71,7 +71,23 @@ class KillSwitch:
+         """
+         raise NotImplementedError
+ 
+-    def enable_ipv6_leak_protection(self) -> Future:
++    def enable_route(self, vpn_server):
++        """
++        Enables the kill switch route.
++
++        :raises KillSwitchError: If unable to enable the kill switch route.
++        """
++        raise NotImplementedError
++
++    def disable_route(self):
++        """
++        Disables the kill switch route.
++
++        :raises KillSwitchError: If unable to disable the kill switch route.
++        """
++        raise NotImplementedError
++
++    def enable_ipv6_leak_protection(self):
+         """
+         Enables IPv6 kill switch to prevent leaks.
+ 
+@@ -79,7 +95,7 @@ class KillSwitch:
+         """
+         raise NotImplementedError
+ 
+-    def disable_ipv6_leak_protection(self) -> Future:
++    def disable_ipv6_leak_protection(self):
+         """
+         Disables IPv6 kill switch to prevent leaks.
+ 
+diff -rupN original/proton/vpn/session/client_config.py proton/vpn/session/client_config.py
+--- original/proton/vpn/session/client_config.py	2023-07-22 13:27:07.727944192 +0700
++++ proton/vpn/session/client_config.py	2023-07-20 19:29:53.140907883 +0700
+@@ -20,10 +20,11 @@ from __future__ import annotations
+ from dataclasses import dataclass
+ from pathlib import Path
+ import random
+-from typing import List, Optional, TYPE_CHECKING
++from typing import List, TYPE_CHECKING
+ import time
+ 
+ from proton.utils.environment import VPNExecutionEnvironment
++from proton.vpn.core_api.settings import KillSwitchMode
+ 
+ from proton.vpn.session.cache import CacheFile
+ from proton.vpn.session.exceptions import ClientConfigDecodeError
+@@ -56,6 +57,7 @@ DEFAULT_CLIENT_CONFIG = {
+         "StartConnectOnBoot": True,
+         "PollNotificationAPI": True,
+         "VpnAccelerator": True,
++        "KillSwitch": False,
+         "SmartReconnect": True,
+         "PromoCode": False,
+         "WireGuardTls": True,
+@@ -114,6 +116,7 @@ class FeatureFlags:  # pylint: disable=R
+     start_connect_on_boot: bool
+     poll_notification_api: bool
+     vpn_accelerator: bool
++    kill_switch: KillSwitchMode
+     smart_reconnect: bool
+     promo_code: bool
+     wireguard_tls: bool
+@@ -134,6 +137,7 @@ class FeatureFlags:  # pylint: disable=R
+             feature_flags["StartConnectOnBoot"],
+             feature_flags["PollNotificationAPI"],
+             feature_flags["VpnAccelerator"],
++            feature_flags["KillSwitch"],
+             feature_flags["SmartReconnect"],
+             feature_flags["PromoCode"],
+             feature_flags["WireGuardTls"],
+@@ -171,6 +175,10 @@ class ClientConfig:
+             feature_flags = apidata["FeatureFlags"]
+             expiration_time = float(apidata.get("ExpirationTime", cls.get_expiration_time()))
+ 
++            # add 'KillSwitch' flag if it's not present
++            if "KillSwitch" not in feature_flags:
++                feature_flags["KillSwitch"] = KillSwitchMode.DISABLED
++
+             return ClientConfig(
+                 # No need to copy openvpn_ports, OpenVPNPorts takes care of it.
+                 OpenVPNPorts.from_dict(openvpn_ports),
