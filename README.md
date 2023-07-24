@@ -80,3 +80,66 @@ deleting the config located in `~/.config/Proton/VPN` and then try again.
 
 For this patch i use [`python-ipaddress`](https://aur.archlinux.org/packages/python-ipaddress) which is a dependency that i
 used to make the `route` kill switch works. And to do that you have to install the `python-ipaddress` AUR first
+
+## WireGuard
+
+---
+
+For WireGuard, instead of plugin that i assume Proton team are using. What we are doing here
+is by using NetworkManager WireGuard native support. And the fact that NetworkManager-wireguard plugin
+is not available anymore in AUR, so i decide to use the native one where we don't have to install
+extra package.
+
+
+### Problem
+
+When i tried to implement WireGuard, there's some problem that's Kill Switch. Unlike OpenVPN
+that automatically configure it ip route, WireGuard automatically manage the route. This
+create a problem for our Network Manager kill switch, and to solve it i decide to use an other way.
+
+#### Using IP Table
+
+I decide to use IP Table to solve this problem, unfortunately we need root access to do this.
+Well i can't elevate the whole program, so i decide to use `pkexec` to solve it. This command
+when run, will show a popups that ask for root password. And then we could use it to run the 
+`iptables` command.
+
+##### The Script
+```shell
+enable() {
+    iptables -I OUTPUT ! -o "$1" -m mark ! --mark $2 -m addrtype ! --dst-type LOCAL -j REJECT
+    ip6tables -I OUTPUT ! -o "$1" -m mark ! --mark $2 -m addrtype ! --dst-type LOCAL -j REJECT
+}
+
+disable() {
+    iptables -D OUTPUT ! -o "$1" -m mark ! --mark $2 -m addrtype ! --dst-type LOCAL -j REJECT
+    ip6tables -D OUTPUT ! -o "$1" -m mark ! --mark $2 -m addrtype ! --dst-type LOCAL -j REJECT
+}
+
+if [ "$0" = "enable" ]; then
+    enable "$1" $2
+    exit 1
+elif [ "$0" = "disable" ]; then
+    disable "$1" $2
+    exit 1
+fi
+
+echo "Usage: $0 [enable|disable] <interface> <fw_mark>"
+echo "What you run: $0 $1 $2"
+```
+
+##### How the script run
+
+Instead of saving the script to a file, for a security reason the script will be run directly using
+`bash -c` command.
+
+#### Some of the network config f*cked up? what should i do?
+
+I know this might be a problem for some of you, but i provide a menu that you could use to reset
+your NetworkManager connection and IP Table rules. This script won't delete your config, but it
+will only delete the connection and the IP Table rules the program created. This might also solve some problem where 
+the config not getting deleted due to unexpected error.
+
+#### I can't run the script? what should i do?
+
+The script need `pkexec` to run, and if you don't have it installed you have to install it first.

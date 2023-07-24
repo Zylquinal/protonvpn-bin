@@ -34,8 +34,10 @@ optdepends=('libayatana-appindicator'
             'gnome-shell-extensions'
 )
 
+root_dir=$(pwd)
+
 source=("https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gnome-desktop/proton-vpn-gnome-desktop-0.2.0-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.0.0-0.11.a11.fc38.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.0.0-0.13.a13.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-keyring-linux/python3-proton-keyring-linux-0.0.1-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-keyring-linux-secretservice/python3-proton-keyring-linux-secretservice-0.0.1-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.17.0-1.fc38.noarch.rpm"
@@ -52,5 +54,17 @@ source=("https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gnome-desktop/
 sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 
 package() {
+    apply_patch
     find $srcdir/ -mindepth 1 -maxdepth 1 -type d | xargs cp -r -t "$pkgdir"
 }
+
+apply_patch() {
+    echo "Applying patch..."
+    cd $srcdir/usr/lib/python3.11/site-packages
+    patch -p1 < $root_dir/egg.patch
+
+    cd $srcdir/usr/lib/python3.11/site-packages/proton
+    patch --batch -p1 < $root_dir/protonvpn.patch
+    cd $root_dir
+}
+

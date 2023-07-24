@@ -1,0 +1,8 @@
+diff -rupN original/proton_vpn_network_manager_openvpn-0.0.4-py3.11.egg-info/entry_points.txt ./proton_vpn_network_manager_openvpn-0.0.4-py3.11.egg-info/entry_points.txt
+--- original/proton_vpn_network_manager_openvpn-0.0.4-py3.11.egg-info/entry_points.txt	2023-07-05 07:00:00.000000000 +0700
++++ ./proton_vpn_network_manager_openvpn-0.0.4-py3.11.egg-info/entry_points.txt	2023-07-22 15:29:16.733259611 +0700
+@@ -1,3 +1,4 @@
+ [proton_loader_linuxnetworkmanager]
+ openvpn-tcp = proton.vpn.backend.linux.networkmanager.protocol.openvpn:OpenVPNTCP
+ openvpn-udp = proton.vpn.backend.linux.networkmanager.protocol.openvpn:OpenVPNUDP
++wireguard = proton.vpn.backend.linux.networkmanager.protocol.wireguard:WireGuard

@@ -1,6 +1,567 @@
+diff -rupN original/proton/session/api.py proton/session/api.py
+--- original/proton/session/api.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/session/api.py	2023-07-24 09:55:53.047106877 +0700
+@@ -20,7 +20,8 @@ from __future__ import annotations
+ from typing import *
+ 
+ from proton import session
+-from .exceptions import ProtonCryptoError, ProtonAPIError, ProtonAPIAuthenticationNeeded, ProtonAPI2FANeeded, ProtonAPIMissingScopeError, ProtonAPIHumanVerificationNeeded
++from .exceptions import ProtonCryptoError, ProtonAPIError, ProtonAPIAuthenticationNeeded, ProtonAPI2FANeeded, \
++    ProtonAPIMissingScopeError, ProtonAPIHumanVerificationNeeded
+ from .srp import User as PmsrpUser
+ from .environments import Environment
+ from ..loader import Loader
+@@ -54,18 +55,21 @@ def sync_wrapper(f):
+             newloop = True
+ 
+         if not newloop:
+-            raise RuntimeError("It's forbidden to call sync_wrapped functions from an async one, please await directly the async one")
+-        
++            raise RuntimeError(
++                "It's forbidden to call sync_wrapped functions from an async one, please await directly the async one")
++
+         loop = asyncio.new_event_loop()
+         try:
+             return loop.run_until_complete(f(*a, **kw))
+         finally:
+             loop.close()
++
+     wrapped_f.__doc__ = f"Synchronous wrapper for :meth:`{f.__name__}`"
+     return wrapped_f
+ 
++
+ class Session:
+-    def __init__(self, appversion : str = "Other", user_agent:str="None"):
++    def __init__(self, appversion: str = "Other", user_agent: str = "None"):
+         """Get a session towards the Proton API.
+ 
+         :param appversion: version for the new Session object, defaults to ``"Other"``
+@@ -87,37 +91,36 @@ class Session:
+ 
+         self.__AccountName = None
+ 
+-        #Extra data that we want to persist (used if we load a session from a subclass)
++        # Extra data that we want to persist (used if we load a session from a subclass)
+         self.__extrastate = {}
+ 
+         # Temporary storage for 2FA object
+         self.__2FA = None
+ 
+-        #Refresh revision (incremented each time a refresh is done)
+-        #This allows knowing if a refresh should be done or if it is already in progress
++        # Refresh revision (incremented each time a refresh is done)
++        # This allows knowing if a refresh should be done or if it is already in progress
+         self.__refresh_revision = 0
+ 
+-        #Lazy initialized by modulus decryption
++        # Lazy initialized by modulus decryption
+         self.__gnupg_for_modulus = None
+ 
+-        #Lazy initialized by api request
++        # Lazy initialized by api request
+         self.__transport = None
+         self.__transport_factory = None
+ 
+         self.transport_factory = None
+ 
+-        #Lazy initialized by request lock/unlock
++        # Lazy initialized by request lock/unlock
+         self.__can_run_requests = None
+ 
+-        #Lazy initialized by environment:
++        # Lazy initialized by environment:
+         self.__environment = None
+ 
+         self.__persistence_observers = []
+ 
+-
+     async def async_api_request(self, endpoint,
+-        jsondata=None, data=None, additional_headers=None,
+-        method=None, params=None, no_condition_check=False):
++                                jsondata=None, data=None, additional_headers=None,
++                                method=None, params=None, no_condition_check=False):
+         """Do an API request.
+ 
+         This call can return any of the exceptions defined in :mod:`proton.session.exceptions`.
+@@ -152,7 +155,8 @@ class Session:
+             attempts -= 1
+             try:
+                 refresh_revision_at_start = self.__refresh_revision
+-                return await self.__async_api_request_internal(endpoint, jsondata, data, additional_headers, method, params, no_condition_check)
++                return await self.__async_api_request_internal(endpoint, jsondata, data, additional_headers, method,
++                                                               params, no_condition_check)
+             except ProtonAPIError as e:
+                 # We have a missing scope.
+                 if e.http_code == 403:
+@@ -162,31 +166,33 @@ class Session:
+                     else:
+                         # Otherwise, just throw the 403
+                         raise ProtonAPIMissingScopeError.from_proton_api_error(e)
+-                #401: token expired
++                # 401: token expired
+                 elif e.http_code == 401:
+-                    #If we can refresh, than do it and retry
+-                    if await self.async_refresh(only_when_refresh_revision_is=refresh_revision_at_start, no_condition_check=no_condition_check):
++                    # If we can refresh, than do it and retry
++                    if await self.async_refresh(only_when_refresh_revision_is=refresh_revision_at_start,
++                                                no_condition_check=no_condition_check):
+                         continue
+-                    #Else, fail :-(
++                    # Else, fail :-(
+                     else:
+                         raise ProtonAPIAuthenticationNeeded.from_proton_api_error(e)
+-                #422 + 9001: Human verification needed
++                # 422 + 9001: Human verification needed
+                 elif e.http_code == 422 and e.body_code == 9001:
+                     raise ProtonAPIHumanVerificationNeeded.from_proton_api_error(e)
+-                #Invalid human verification token
++                # Invalid human verification token
+                 elif e.body_code == 12087:
+                     raise ProtonAPIHumanVerificationNeeded.from_proton_api_error(e)
+-                #These are codes which require and immediate retry
++                # These are codes which require and immediate retry
+                 elif e.http_code in (408, 502):
+                     continue
+-                #These not, let's retry more gracefully
++                # These not, let's retry more gracefully
+                 elif e.http_code in (429, 503):
+                     await self.__sleep_for_exception(e)
+                     continue
+-                #Something else, throw
++                # Something else, throw
+                 raise
+ 
+-    async def async_authenticate(self, username: str, password: str, client_secret: str = None, no_condition_check: bool = False, additional_headers=None) -> bool:
++    async def async_authenticate(self, username: str, password: str, client_secret: str = None,
++                                 no_condition_check: bool = False, additional_headers=None) -> bool:
+         """Authenticate against Proton API
+ 
+         :param username: Proton account username
+@@ -267,9 +273,7 @@ class Session:
+         finally:
+             self._requests_unlock(no_condition_check)
+ 
+-    
+-
+-    async def async_provide_2fa(self, code : str, no_condition_check=False, additional_headers=None) -> bool:
++    async def async_provide_2fa(self, code: str, no_condition_check=False, additional_headers=None) -> bool:
+         """Provide Two Factor Authentication Code to the API.
+         
+         :param code: 2FA code
+@@ -289,12 +293,12 @@ class Session:
+             if ret.get('Code') == 1000:
+                 self.__2FA = None
+                 return True
+-            
++
+             return False
+         except ProtonAPIError as e:
+             if e.body_code == 8002:
+                 # 2FA jail, we need to start over (beware, we might hit login jails too)
+-                #Needs re-login
++                # Needs re-login
+                 self._clear_local_data()
+                 raise ProtonAPIAuthenticationNeeded.from_proton_api_error(e)
+             if e.http_code == 401:
+@@ -315,12 +319,12 @@ class Session:
+         """
+         self._requests_lock(no_condition_check)
+ 
+-        #If we have the correct revision, and it doesn't match, then just exit
++        # If we have the correct revision, and it doesn't match, then just exit
+         if only_when_refresh_revision_is is not None and self.__refresh_revision != self.__refresh_revision:
+             self._requests_unlock(no_condition_check)
+             return True
+ 
+-        #Increment the refresh revision counter, so we don't refresh multiple times
++        # Increment the refresh revision counter, so we don't refresh multiple times
+         self.__refresh_revision += 1
+ 
+         attempts = 3
+@@ -341,24 +345,22 @@ class Session:
+                     return True
+ 
+                 except ProtonAPIError as e:
+-                    #https://confluence.protontech.ch/display/API/Authentication%2C+sessions%2C+and+tokens#Authentication,sessions,andtokens-RefreshingSessions
++                    # https://confluence.protontech.ch/display/API/Authentication%2C+sessions%2C+and+tokens#Authentication,sessions,andtokens-RefreshingSessions
+                     if e.http_code == 409:
+-                        #409 Conflict - Indicates a race condition on the DB, and the request should be performed again
++                        # 409 Conflict - Indicates a race condition on the DB, and the request should be performed again
+                         continue
+-                    #We're probably jailed, just retry later
++                    # We're probably jailed, just retry later
+                     elif e.http_code in (429, 503):
+                         await self.__sleep_for_exception(e)
+                         continue
+                     elif e.http_code in (400, 422):
+-                        #Needs re-login
++                        # Needs re-login
+                         self._clear_local_data()
+                         return False
+                     return False
+         finally:
+             self._requests_unlock(no_condition_check)
+ 
+-
+-
+     async def async_logout(self, no_condition_check=False, additional_headers=None):
+         """Logout from API.
+         
+@@ -403,24 +405,24 @@ class Session:
+             return True
+         finally:
+             self._requests_unlock(no_condition_check)
+-        #FIXME: clear user keys
++        # FIXME: clear user keys
+ 
+-    #FIXME: implement unlock
++    # FIXME: implement unlock
+ 
+     async def async_human_verif_request_code(self, address=None, phone=None, additional_headers=None):
+         """Request a verification code. Either address (email address) or phone (phone number) should be specified."""
+-        assert address is not None ^ phone is not None # nosec (we use email validation by default if both are provided, but it's not super clean if the dev doesn't know about it)
++        assert address is not None ^ phone is not None  # nosec (we use email validation by default if both are provided, but it's not super clean if the dev doesn't know about it)
+ 
+         if address is not None:
+             data = {'Type': 'email', 'Destination': {'Address': address}}
+         elif phone is not None:
+             data = {'Type': 'sms', 'Destination': {'Phone': phone}}
+-        
+-        return await self.async_api_request('/users/code', data, additional_headers=additional_headers).get('Code', 0) == 1000
++
++        return await self.async_api_request('/users/code', data, additional_headers=additional_headers).get('Code',
++                                                                                                            0) == 1000
+ 
+     async def async_human_verif_provide_token(self, method, token):
+         pass
+-    
+ 
+     # Wrappers to provide non-asyncio API
+     api_request = sync_wrapper(async_api_request)
+@@ -496,7 +498,7 @@ class Session:
+         :rtype: bool
+         """
+         return self.__UID is not None
+-    
++
+     @property
+     def UID(self) -> Optional[str]:
+         """:return: the session UID, None if not authenticated
+@@ -560,17 +562,18 @@ class Session:
+         if not isinstance(newvalue, Environment):
+             raise TypeError("environment should be a subclass of Environment")
+ 
+-        #Same environment => nothing to do
++        # Same environment => nothing to do
+         if self.__environment == newvalue:
+             return
+-        
++
+         if self.__environment is not None:
+             raise ValueError("Cannot change environment of an established session (that would create security issues)!")
+         self.__environment = newvalue
+ 
+     def __setstate__(self, data):
+         # If we're running an unpickle, then the object constructor hasn't been called, so we need to populate __dict__
+-        for attr, default in (('gnupg_for_modulus', None), ('can_run_requests', None), ('transport', None), ('persistence_observers', [])):
++        for attr, default in (
++        ('gnupg_for_modulus', None), ('can_run_requests', None), ('transport', None), ('persistence_observers', [])):
+             if '_Session__' + attr not in self.__dict__:
+                 self.__dict__['_Session__' + attr] = default
+ 
+@@ -578,7 +581,7 @@ class Session:
+         for attr, default in (('2FA', None), ('appversion', 'Other'), ('user_agent', 'None'), ('refresh_revision', 0)):
+             if '_Session__' + attr not in self.__dict__:
+                 self.__dict__['_Session__' + attr] = data.get('LastUseData', {}).get(attr, default)
+-        
++
+         # We don't pickle the transport, so if not set just use the default
+         if '_Session__transport_factory' not in self.__dict__:
+             self.transport_factory = None
+@@ -588,16 +591,17 @@ class Session:
+         self.__RefreshToken = data.get('RefreshToken', None)
+         self.__Scopes = data.get('Scopes', None)
+         self.__AccountName = data.get('AccountName', None)
+-        #Reset transport (user agent etc might have changed)
++        # Reset transport (user agent etc might have changed)
+         self.__transport = None
+-        #get environment as stored in the session
++        # get environment as stored in the session
+         if data.get('Environment', None) is not None:
+             self.__environment: Environment = Loader.get("environment", data.get('Environment', None))()
+         else:
+             self.__environment = None
+ 
+         # Store everything we don't know about in extrastate
+-        self.__extrastate = dict([(k, v) for k, v in data.items() if k not in ('UID','AccessToken','RefreshToken','Scopes','AccountName','Environment', 'LastUseData')])
++        self.__extrastate = dict([(k, v) for k, v in data.items() if k not in (
++        'UID', 'AccessToken', 'RefreshToken', 'Scopes', 'AccountName', 'Environment', 'LastUseData')])
+ 
+     def __getstate__(self):
+         # If we don't have an UID, then we're not logged in and we don't want to store a specific state
+@@ -605,7 +609,7 @@ class Session:
+             data = {}
+         else:
+             data = {
+-                #Session data
++                # Session data
+                 'UID': self.UID,
+                 'AccessToken': self.__AccessToken,
+                 'RefreshToken': self.__RefreshToken,
+@@ -635,7 +639,7 @@ class Session:
+         """
+         if no_condition_check:
+             return
+-        
++
+         if self.__can_run_requests is None:
+             self.__can_run_requests = asyncio.Event()
+         self.__can_run_requests.clear()
+@@ -657,7 +661,7 @@ class Session:
+         """
+         if no_condition_check:
+             return
+-        
++
+         if self.__can_run_requests is None:
+             self.__can_run_requests = asyncio.Event()
+         self.__can_run_requests.set()
+@@ -683,20 +687,19 @@ class Session:
+         """
+         if no_condition_check or self.__can_run_requests is None:
+             return
+-        
+-        await self.__can_run_requests.wait()
+ 
++        await self.__can_run_requests.wait()
+ 
+     async def __sleep_for_exception(self, e):
+-        if e.http_headers.get('retry-after','-').isnumeric():
++        if e.http_headers.get('retry-after', '-').isnumeric():
+             await asyncio.sleep(int(e.http_headers.get('retry-after')))
+         else:
+-            await asyncio.sleep(3+random.random()*5) # nosec (no crypto risk here of using an unsafe generator)
++            await asyncio.sleep(3 + random.random() * 5)  # nosec (no crypto risk here of using an unsafe generator)
+ 
+     async def __async_api_request_internal(
+-        self, endpoint,
+-        jsondata=None, data=None, additional_headers=None,
+-        method=None, params=None, no_condition_check=False
++            self, endpoint,
++            jsondata=None, data=None, additional_headers=None,
++            method=None, params=None, no_condition_check=False
+     ):
+         """Internal function to do an API request (without clever exception handling and retrying). 
+         See :meth:`async_api_request` for the parameters specification."""
+@@ -724,7 +727,3 @@ class Session:
+             raise ProtonCryptoError('Invalid modulus')
+ 
+         return base64.b64decode(verified.data.strip())
+-
+-
+-
+-
+diff -rupN original/proton/vpn/app/gtk/services/refresher/session_refresher.py proton/vpn/app/gtk/services/refresher/session_refresher.py
+--- original/proton/vpn/app/gtk/services/refresher/session_refresher.py	1970-01-01 07:00:00.000000000 +0700
++++ proton/vpn/app/gtk/services/refresher/session_refresher.py	2023-07-24 09:55:53.035106836 +0700
+@@ -0,0 +1,69 @@
++import logging
++from datetime import timedelta
++
++from gi.repository import GLib, GObject
++from concurrent.futures import Future, ThreadPoolExecutor
++
++from proton.vpn.app.gtk.utils.glib import run_after_seconds
++from proton.vpn.core_api.api import ProtonVPNAPI
++
++logger = logging.getLogger(__name__)
++
++
++class SessionRefresher(GObject.Object):
++
++    def __init__(
++            self,
++            thread_pool_executor: ThreadPoolExecutor,
++            proton_vpn_api: ProtonVPNAPI
++    ):
++        super().__init__()
++        self._thread_pool = thread_pool_executor
++        self._api = proton_vpn_api
++        self._reload_session_source_id: int = None
++        self._refresh_time = 1
++
++    @property
++    def enabled(self):
++        """Whether the refresher has already been enabled or not."""
++        return self._reload_session_source_id is not None
++
++    def enable(self):
++        """Starts periodically refreshing the session."""
++        logger.info("Session refresher enabled.")
++
++        self._schedule_session_refresh(
++            delay_in_seconds=self._refresh_time
++        )
++
++        self._refresh_time = 3600
++
++    def disable(self):
++        """Stops periodically refreshing the session."""
++        if self._reload_session_source_id is not None:
++            GLib.source_remove(self._reload_session_source_id)
++            self._reload_session_source_id = None
++            logger.info("Session refresher disabled.")
++
++    def _refresh(self):
++        refresh = self._api.refresh_session()
++        if refresh is not None:
++            self._refresh_time = refresh
++        else:
++            logger.info("Session refreshed.")
++
++        self._schedule_session_refresh(
++            delay_in_seconds=self._refresh_time
++        )
++
++    def _schedule_session_refresh(self, delay_in_seconds: int):
++        """Schedules the next session refresh."""
++        self._reload_session_source_id = run_after_seconds(
++            self._refresh,
++            delay_seconds=delay_in_seconds
++        )
++        logger.info(
++            f"Next session refresh scheduled in "
++            f"{timedelta(seconds=delay_in_seconds)}"
++        )
++
+diff -rupN original/proton/vpn/app/gtk/services/refresher/vpn_data_refresher.py proton/vpn/app/gtk/services/refresher/vpn_data_refresher.py
+--- original/proton/vpn/app/gtk/services/refresher/vpn_data_refresher.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/app/gtk/services/refresher/vpn_data_refresher.py	2023-07-24 08:35:51.129148832 +0700
+@@ -28,6 +28,7 @@ from typing import Callable, Any, Dict
+ from gi.repository import GLib, GObject
+ 
+ from proton.vpn import logging
++from proton.vpn.app.gtk.services.refresher.session_refresher import SessionRefresher
+ from proton.vpn.session.client_config import ClientConfig
+ from proton.vpn.session.servers.logicals import ServerList
+ from proton.vpn.core_api.api import ProtonVPNAPI
+@@ -51,7 +52,8 @@ class VPNDataRefresher(GObject.Object):
+         thread_pool_executor: ThreadPoolExecutor,
+         proton_vpn_api: ProtonVPNAPI,
+         client_config_refresher: ClientConfigRefresher = None,
+-        server_list_refresher: ServerListRefresher = None
++        server_list_refresher: ServerListRefresher = None,
++        session_refresher: SessionRefresher = None
+     ):
+         super().__init__()
+         self._thread_pool = thread_pool_executor
+@@ -64,10 +66,15 @@ class VPNDataRefresher(GObject.Object):
+             thread_pool_executor,
+             proton_vpn_api
+         )
++        self._session_refresher = session_refresher or SessionRefresher(
++            thread_pool_executor,
++            proton_vpn_api
++        )
+         self._signal_refresher_map = {
+             "new-client-config": self._client_config_refresher,
+             "new-server-list": self._server_list_refresher,
+-            "new-server-loads": self._server_list_refresher
++            "new-server-loads": self._server_list_refresher,
++            "new-session": self._session_refresher
+         }
+         self._signal_handler_ids: Dict[int, GObject.Object] = {}
+ 
+@@ -138,6 +145,7 @@ class VPNDataRefresher(GObject.Object):
+         """Stops retrieving data periodically from Proton's REST API."""
+         self._client_config_refresher.disable()
+         self._server_list_refresher.disable()
++        self._session_refresher.disable()
+         logger.info(
+             "VPN data refresher service disabled.",
+             category="app", subcategory="vpn_data_refresher", event="disable"
+@@ -151,6 +159,7 @@ class VPNDataRefresher(GObject.Object):
+         )
+         self._client_config_refresher.enable()
+         self._server_list_refresher.enable()
++        self._session_refresher.enable()
+ 
+     def _refresh_vpn_session_and_then_enable(self):
+         logger.warning("Reloading VPN session...")
+diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/menu.py proton/vpn/app/gtk/widgets/headerbar/menu/menu.py
+--- original/proton/vpn/app/gtk/widgets/headerbar/menu/menu.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/app/gtk/widgets/headerbar/menu/menu.py	2023-07-23 18:38:11.915762499 +0700
+@@ -35,6 +35,8 @@ from proton.vpn.app.gtk.widgets.headerba
+ 
+ from proton.session.exceptions import ProtonAPINotReachable
+ from proton.vpn import logging
++from proton.vpn.connection import script
++from proton.vpn.connection.constants import WIREGUARD_FW_MARK, WIREGUARD_DEVICE_NAME
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -65,6 +67,8 @@ class Menu(Gio.Menu):  # pylint: disable
+         self.settings_action = Gio.SimpleAction.new("settings", None)
+         self.release_notes_action = Gio.SimpleAction.new("release_notes", None)
+         self.about_action = Gio.SimpleAction.new("about", None)
++        self.clear_nm_action = Gio.SimpleAction.new("clear_nm", None)
++        self.clear_ip_table_action = Gio.SimpleAction.new("clear_ip_table", None)
+         self.logout_action = Gio.SimpleAction.new("logout", None)
+         self.quit_action = Gio.SimpleAction.new("quit", None)
+ 
+@@ -72,6 +76,8 @@ class Menu(Gio.Menu):  # pylint: disable
+         self.append_item(Gio.MenuItem.new("Settings", "win.settings"))
+         self.append_item(Gio.MenuItem.new("Release notes", "win.release_notes"))
+         self.append_item(Gio.MenuItem.new("Report an issue", "win.report"))
++        self.append_item(Gio.MenuItem.new("Clear NetworkManager", "win.clear_nm"))
++        self.append_item(Gio.MenuItem.new("Clear IP table (root)", "win.clear_ip_table"))
+         self.append_item(Gio.MenuItem.new("Logout", "win.logout"))
+         self.append_item(Gio.MenuItem.new("Quit", "win.quit"))
+ 
+@@ -107,6 +113,8 @@ class Menu(Gio.Menu):  # pylint: disable
+         self._main_window.add_action(self.settings_action)
+         self._main_window.add_action(self.release_notes_action)
+         self._main_window.add_action(self.about_action)
++        self._main_window.add_action(self.clear_nm_action)
++        self._main_window.add_action(self.clear_ip_table_action)
+         self._main_window.add_action(self.logout_action)
+         self._main_window.add_action(self.quit_action)
+ 
+@@ -123,6 +131,12 @@ class Menu(Gio.Menu):  # pylint: disable
+         self.about_action.connect(
+             "activate", self._on_about_clicked
+         )
++        self.clear_nm_action.connect(
++            "activate", self._on_clear_nm_clicked
++        )
++        self.clear_ip_table_action.connect(
++            "activate", self._on_clear_ip_table_clicked
++        )
+         self.logout_action.connect(
+             "activate", self._on_logout_clicked
+         )
+@@ -155,6 +169,18 @@ class Menu(Gio.Menu):  # pylint: disable
+         about_dialog.run()
+         about_dialog.destroy()
+ 
++    def _on_clear_nm_clicked(self, *_):
++        logger.info("Clear NetworkManager button clicked", category="ui", subcategory="clear_nm", event="click")
++        self._loading_widget.show("Clearing NetworkManager...")
++        script.clear_nm()
++        self._loading_widget.hide()
++
++    def _on_clear_ip_table_clicked(self, *_):
++        logger.info("Clear IP table button clicked", category="ui", subcategory="clear_ip_table", event="click")
++        self._loading_widget.show("Clearing IP table...")
++        script.run_wg(False, interface=WIREGUARD_DEVICE_NAME, fw_mark=WIREGUARD_FW_MARK)
++        self._loading_widget.hide()
++
+     def _on_logout_clicked(self, *_):
+         logger.info("Logout button clicked", category="ui", subcategory="logout", event="click")
+         self.logout_enabled = False
 diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py
---- original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py	2023-07-22 13:27:07.707944065 +0700
-+++ proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py	2023-07-22 12:27:06.860621268 +0700
+--- original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py	2023-07-22 15:26:45.549458079 +0700
 @@ -19,6 +19,7 @@ GNU General Public License for more deta
  You should have received a copy of the GNU General Public License
  along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
@@ -63,7 +624,15 @@ diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connectio
      def build_protocol(self):
          """Builds and adds the `protocol` setting to the widget."""
          def on_combobox_changed(combobox):
-@@ -142,3 +162,70 @@ class ConnectionSettings(Gtk.Box):
+@@ -100,6 +120,7 @@ class ConnectionSettings(Gtk.Box):
+         human_readeable_protocol = {
+             "openvpn-tcp": "OpenVPN (TCP)",
+             "openvpn-udp": "OpenVPN (UDP)",
++            "wireguard": "WireGuard"
+         }
+ 
+         for protocol in available_protocols:
+@@ -142,3 +163,70 @@ class ConnectionSettings(Gtk.Box):
          vpn_accelerator_switch.set_state(self.vpn_accelerator)
          vpn_accelerator_switch.connect("state-set", on_switch_state)
          self.pack_start(self.vpn_accelerator_row, False, False, 0)
@@ -135,9 +704,231 @@ diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connectio
 +
 +        self.pack_start(self.kill_switch_row, False, False, 0)
 \ No newline at end of file
+diff -rupN original/proton/vpn/backend/linux/networkmanager/core/networkmanager.py proton/vpn/backend/linux/networkmanager/core/networkmanager.py
+--- original/proton/vpn/backend/linux/networkmanager/core/networkmanager.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/backend/linux/networkmanager/core/networkmanager.py	2023-07-23 16:43:37.615433338 +0700
+@@ -69,7 +69,6 @@ class LinuxNetworkManager(VPNConnection)
+         """
+         Starts a VPN connection using NetworkManager.
+         """
+-
+         def start_if_server_reachable(server_reachable: bool):
+             if server_reachable:
+                 logger.info("VPN server REACHABLE.")
+@@ -126,10 +125,16 @@ class LinuxNetworkManager(VPNConnection)
+                 self.remove_connection()
+                 return
+ 
+-            vpn_connection.connect(
+-                "vpn-state-changed",
+-                self._on_vpn_state_changed
+-            )
++            try:
++                vpn_connection.connect(
++                    "vpn-state-changed",
++                    self._on_vpn_state_changed
++                )
++            except TypeError:
++                vpn_connection.connect(
++                    "state-changed",
++                    self._on_active_state_changed
++                )
+ 
+         # start_connection_future is done as soon as the VPN connection
+         # is activated, but before it's established. As soon as the
+@@ -153,6 +158,61 @@ class LinuxNetworkManager(VPNConnection)
+         super().remove_persistence()
+         self.remove_connection()
+ 
++
++    def _on_active_state_changed(self, active_connection: NM.ActiveConnection, state: int, reason: int):
++        try:
++            state = NM.ActiveConnectionState(state)
++        except ValueError:
++            logger.warning("Unexpected VPN connection state: %s", state)
++            state = NM.ActiveConnectionState.UNKNOWN
++
++        try:
++            reason = NM.ActiveConnectionStateReason(reason)
++        except ValueError:
++            logger.warning("Unexpected VPN connection state reason: %s", reason)
++            reason = NM.ActiveConnectionState.UNKNOWN
++
++        logger.info(
++            f"VPN connection state changed: state=%s (), reason=%s",
++            state.value_name, reason.value_name
++        )
++
++        if state is NM.ActiveConnectionState.ACTIVATED:
++            self._notify_subscribers(events.Connected(EventContext(connection=self)))
++        elif state is NM.ActiveConnectionState.UNKNOWN:
++            if reason in [
++                NM.ActiveConnectionStateReason.CONNECT_TIMEOUT,
++                NM.ActiveConnectionStateReason.SERVICE_START_TIMEOUT
++            ]:
++                self._notify_subscribers(
++                    events.Timeout(EventContext(connection=self, error=reason))
++                )
++            else:
++                self._notify_subscribers(
++                    events.UnexpectedError(EventContext(connection=self, error=reason))
++                )
++        elif state == NM.ActiveConnectionState.DEACTIVATED:
++            if reason in [NM.ActiveConnectionStateReason.DEVICE_DISCONNECTED]:
++                self._notify_subscribers(
++                    events.Disconnected(EventContext(connection=self, error=reason))
++                )
++            elif reason in [
++                NM.ActiveConnectionStateReason.CONNECT_TIMEOUT,
++                NM.ActiveConnectionStateReason.SERVICE_START_TIMEOUT,
++                NM.ActiveConnectionStateReason.SERVICE_START_FAILED,
++                NM.ActiveConnectionStateReason.LOGIN_FAILED,
++                NM.ActiveConnectionStateReason.UNKNOWN,
++                NM.ActiveConnectionStateReason.NONE,
++                NM.ActiveConnectionStateReason.DEPENDENCY_FAILED,
++                NM.ActiveConnectionStateReason.IP_CONFIG_INVALID,
++                NM.ActiveConnectionStateReason.CONNECT_TIMEOUT,
++            ]:
++                self._notify_subscribers(
++                    events.UnexpectedError(EventContext(connection=self, error=reason))
++                )
++        else:
++            logger.debug("Ignoring VPN state change: %s", state.value_name)
++
+     # pylint: disable=unused-argument
+     def _on_vpn_state_changed(
+             self, vpn_connection: NM.VpnConnection, state: int, reason: int
+diff -rupN original/proton/vpn/backend/linux/networkmanager/protocol/wireguard/__init__.py proton/vpn/backend/linux/networkmanager/protocol/wireguard/__init__.py
+--- original/proton/vpn/backend/linux/networkmanager/protocol/wireguard/__init__.py	1970-01-01 07:00:00.000000000 +0700
++++ proton/vpn/backend/linux/networkmanager/protocol/wireguard/__init__.py	2023-07-22 15:29:16.728259585 +0700
+@@ -0,0 +1,3 @@
++from proton.vpn.backend.linux.networkmanager.protocol.wireguard.wireguard import WireGuardUDP as WireGuard
++
++__all__ = ["WireGuard"]
+\ No newline at end of file
+diff -rupN original/proton/vpn/backend/linux/networkmanager/protocol/wireguard/wireguard.py proton/vpn/backend/linux/networkmanager/protocol/wireguard/wireguard.py
+--- original/proton/vpn/backend/linux/networkmanager/protocol/wireguard/wireguard.py	1970-01-01 07:00:00.000000000 +0700
++++ proton/vpn/backend/linux/networkmanager/protocol/wireguard/wireguard.py	2023-07-23 16:45:49.557699684 +0700
+@@ -0,0 +1,116 @@
++import time
++import uuid
++from concurrent.futures import Future
++
++import gi
++
++from proton.vpn.connection.constants import WIREGUARD_DEVICE_NAME, WIREGUARD_FW_MARK
++
++gi.require_version("NM", "1.0")  # noqa: required before importing NM module
++# pylint: disable=wrong-import-position
++from gi.repository import NM, GLib
++
++from proton.vpn.backend.linux.networkmanager.core import LinuxNetworkManager
++from proton.vpn.connection.vpnconfiguration import VPNConfiguration
++from ipaddress import ip_network
++
++class WireGuard(LinuxNetworkManager):
++    """Base class for the backends implementing the WireGuard protocols."""
++    virtual_device_name = WIREGUARD_DEVICE_NAME
++    connection = None
++
++    def __init__(self, *args, **kwargs):
++        super().__init__(*args, **kwargs)
++        self.__connection_settings = None
++
++    def _calculate_allowed_ips(self) -> list:
++        """Calculates the allowed IPs for the WireGuard connection."""
++        server_ips = self._vpnserver.server_ip
++        subnet = ip_network('0.0.0.0/0').address_exclude(ip_network(server_ips))
++        return [str(ip) for ip in subnet]
++
++    def _configure_connection(self, vpnconfig):
++        """Configure imported vpn connection.
++
++            :param vpnconfig: vpn configuration object.
++            :type vpnconfig: VPNConfiguration
++
++        It also uses vpnserver, vpncredentials and settings for the following reasons:
++            - vpnserver is used to fetch domain, servername (optional)
++            - vpncredentials is used to fetch username/password for non-certificate
++              based connections
++            - settings is used to fetch dns settings
++        """
++        self.connection = NM.SimpleConnection.new()
++
++        s_con = NM.SettingConnection.new()
++
++        # Connection setting
++        s_con.set_property(NM.SETTING_CONNECTION_TYPE, 'wireguard')
++        s_con.set_property(NM.SETTING_CONNECTION_ID, self._get_servername())
++        s_con.set_property(NM.SETTING_CONNECTION_UUID, str(uuid.uuid4()))
++        s_con.set_property(NM.SETTING_CONNECTION_INTERFACE_NAME, self.virtual_device_name)
++        s_con.set_property(NM.SETTING_CONNECTION_AUTOCONNECT, False)
++
++        # IPv4
++        s_ip4 = NM.SettingIP4Config.new()
++        s_ip4.set_property(NM.SETTING_IP_CONFIG_METHOD, 'manual')
++        s_ip4.add_address(
++            NM.IPAddress.new(GLib.SYSDEF_AF_INET, '10.2.0.2', 32)
++        )
++        s_ip4.add_dns('10.2.0.1')
++        s_ip4.props.dns_priority = -1500
++        s_ip4.props.route_metric = 50
++
++        # WireGuard
++        s_wg = NM.SettingWireGuard.new()
++        s_wg.set_property(NM.SETTING_WIREGUARD_PRIVATE_KEY, self._vpncredentials.pubkey_credentials.wg_private_key)
++        s_wg.set_property(NM.SETTING_WIREGUARD_PEER_ROUTES, True)
++        s_wg.set_property(NM.SETTING_WIREGUARD_MTU, 0)
++        s_wg.set_property(NM.SETTING_WIREGUARD_IP4_AUTO_DEFAULT_ROUTE, True)
++        s_wg.set_property(NM.SETTING_WIREGUARD_FWMARK, WIREGUARD_FW_MARK)
++
++        # Wireguard Peer
++
++        peer = NM.WireGuardPeer.new()
++        peer.set_public_key(self._vpnserver.x25519pk, False)
++        peer.set_endpoint(self._vpnserver.server_ip + ':' + str(self._vpnserver.udp_ports[0]), False)
++
++        # for ip in self._calculate_allowed_ips():
++        #     peer.append_allowed_ip(ip, False)
++
++        peer.append_allowed_ip('0.0.0.0/0', False)
++        peer.append_allowed_ip('::/0', False)
++
++        s_wg.append_peer(peer)
++
++        # Add settings to connection
++        self.connection.add_setting(s_con)
++        self.connection.add_setting(s_ip4)
++        self.connection.add_setting(s_wg)
++
++        self.__connection_settings = self.connection.get_setting_connection()
++
++        self._unique_id = self.__connection_settings.get_uuid()
++
++    def _setup(self) -> Future:
++        vpnconfig = VPNConfiguration.from_factory(self.protocol)
++        vpnconfig = vpnconfig(self._vpnserver, self._vpncredentials, self._settings)
++        vpnconfig.use_certificate = True
++
++        self._configure_connection(vpnconfig)
++
++        return self.nm_client.add_connection_async(self.connection)
++
++
++class WireGuardUDP(WireGuard):
++    """Creates a WireGuard UDP connection."""
++    protocol = "wireguard"
++
++    @classmethod
++    def _get_priority(cls):
++        return 1
++
++    @classmethod
++    def _validate(cls):
++        return True
 diff -rupN original/proton/vpn/connection/constants.py proton/vpn/connection/constants.py
---- original/proton/vpn/connection/constants.py	2023-07-22 13:27:07.720944148 +0700
-+++ proton/vpn/connection/constants.py	2023-07-20 10:22:48.353370956 +0700
+--- original/proton/vpn/connection/constants.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/connection/constants.py	2023-07-23 18:32:35.115476705 +0700
 @@ -55,6 +55,28 @@ A1gTTlpi7A==
  -----END CERTIFICATE-----
  """
@@ -203,8 +994,24 @@ diff -rupN original/proton/vpn/connection/constants.py proton/vpn/connection/con
  
  {%- if certificate_based %}
  <cert>
+@@ -164,3 +165,15 @@ PublicKey = {{ wg_server_pk }}
+ Endpoint = {{ wg_ip }}:{{ wg_port }}
+ AllowedIPs = 0.0.0.0/0
+ """
++
++HUMAN_READABLE_ID = "pvpn-killswitch"
++INTERFACE_NAME = "pvpnksintrf0"
++
++IPV6_HUMAN_READABLE_ID = "pvpn-killswitch-ipv6"
++IPV6_INTERFACE_NAME = "ipv6leakintrf0"
++
++ROUTE_HUMAN_READABLE_ID = "pvpn-killswitch-route"
++ROUTE_INTERFACE_NAME = "pvpnksroute0"
++
++WIREGUARD_FW_MARK = 1234
++WIREGUARD_DEVICE_NAME = "proton0"
 diff -rupN original/proton/vpn/connection/interfaces.py proton/vpn/connection/interfaces.py
---- original/proton/vpn/connection/interfaces.py	2023-07-22 13:27:07.720944148 +0700
+--- original/proton/vpn/connection/interfaces.py	2023-07-24 11:01:59.000000000 +0700
 +++ proton/vpn/connection/interfaces.py	2023-07-20 19:29:53.148907931 +0700
 @@ -156,6 +156,14 @@ class Features:
          return None
@@ -221,10 +1028,77 @@ diff -rupN original/proton/vpn/connection/interfaces.py proton/vpn/connection/in
      def port_forwarding(self):
          """
          :return: port forwarding state value
+diff -rupN original/proton/vpn/connection/script.py proton/vpn/connection/script.py
+--- original/proton/vpn/connection/script.py	1970-01-01 07:00:00.000000000 +0700
++++ proton/vpn/connection/script.py	2023-07-23 21:58:11.328465236 +0700
+@@ -0,0 +1,63 @@
++import logging
++import subprocess
++
++from proton.vpn.connection.constants import HUMAN_READABLE_ID, ROUTE_HUMAN_READABLE_ID, IPV6_HUMAN_READABLE_ID
++
++logger = logging.getLogger(__name__)
++
++FW_MARK_SCRIPT = """
++enable() {
++    iptables -I OUTPUT ! -o "$1" -m mark ! --mark $2 -m addrtype ! --dst-type LOCAL -j REJECT
++    ip6tables -I OUTPUT ! -o "$1" -m mark ! --mark $2 -m addrtype ! --dst-type LOCAL -j REJECT
++}
++
++disable() {
++    iptables -D OUTPUT ! -o "$1" -m mark ! --mark $2 -m addrtype ! --dst-type LOCAL -j REJECT
++    ip6tables -D OUTPUT ! -o "$1" -m mark ! --mark $2 -m addrtype ! --dst-type LOCAL -j REJECT
++}
++
++if [ "$0" = "enable" ]; then
++    enable "$1" $2
++    exit 1
++elif [ "$0" = "disable" ]; then
++    disable "$1" $2
++    exit 1
++fi
++
++echo "Usage: $0 [enable|disable] <interface> <fw_mark>"
++echo "What you run: $0 $1 $2"
++
++"""
++
++
++def run_wg(enable: bool, interface: str = 'proton0', fw_mark: int = 1000) -> (str | None, str | None):
++    enable_str = "enable" if enable else "disable"
++    bash_process = subprocess.run(['pkexec', 'bash', '-c', FW_MARK_SCRIPT, enable_str, interface, str(fw_mark)],
++                                  capture_output=True)
++
++    stdout = bash_process.stdout.decode()
++    stderr = bash_process.stderr.decode()
++
++    if enable:
++        logger.info("Enabling general killswitch (wireguard)...")
++    else:
++        logger.info("Disabling general killswitch (wireguard)...")
++
++    if stdout != "":
++        logger.info(stdout)
++
++    if stderr != "":
++        if "does a matching rule exist in that chain?" in stderr:
++            logger.info("Nothing bad happened, it just means that the rule was already deleted!")
++            stderr = None
++        else:
++            logger.error(stderr)
++
++    return stdout, stderr
++
++
++def clear_nm():
++    general_ks = HUMAN_READABLE_ID
++    ipv6_ks = IPV6_HUMAN_READABLE_ID
++    route_ks = ROUTE_HUMAN_READABLE_ID
++    subprocess.run(['nmcli', 'connection', 'delete', general_ks, ipv6_ks, route_ks])
 diff -rupN original/proton/vpn/connection/states.py proton/vpn/connection/states.py
---- original/proton/vpn/connection/states.py	2023-07-22 13:27:07.720944148 +0700
-+++ proton/vpn/connection/states.py	2023-07-22 13:23:01.025316484 +0700
-@@ -21,6 +21,7 @@ along with ProtonVPN.  If not, see <http
+--- original/proton/vpn/connection/states.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/connection/states.py	2023-07-24 10:58:19.962486684 +0700
+@@ -21,21 +21,23 @@ along with ProtonVPN.  If not, see <http
  """
  from __future__ import annotations
  
@@ -232,7 +1106,12 @@ diff -rupN original/proton/vpn/connection/states.py proton/vpn/connection/states
  from abc import ABC, abstractmethod
  from dataclasses import dataclass
  from typing import TYPE_CHECKING, Optional
-@@ -31,11 +32,11 @@ from proton.vpn.connection import events
+ from concurrent.futures import Future
+ 
+ from proton.vpn import logging
+-from proton.vpn.connection import events
++from proton.vpn.connection import events, script
++from proton.vpn.connection.constants import WIREGUARD_DEVICE_NAME, WIREGUARD_FW_MARK
  from proton.vpn.connection.enum import ConnectionStateEnum
  from proton.vpn.connection.events import EventContext
  from proton.vpn.connection.exceptions import ConcurrentConnectionsError
@@ -245,13 +1124,24 @@ diff -rupN original/proton/vpn/connection/states.py proton/vpn/connection/states
  # pylint: disable=too-few-public-methods
  
  
-@@ -159,13 +160,24 @@ class Disconnected(State):
-             # IMPORTANT: in this case, the kill switch is **not** disabled.
-             return events.Up(EventContext(connection=self.context.reconnection))
+@@ -154,18 +156,47 @@ class Disconnected(State):
+             return None
+ 
+         if self.context.reconnection:
+-            # When a reconnection is expected, an Up event is returned to start a new connection.
+-            # straight away.
+-            # IMPORTANT: in this case, the kill switch is **not** disabled.
+-            return events.Up(EventContext(connection=self.context.reconnection))
++            if self.context.reconnection == self.context.connection:
++                # When a reconnection is expected, an Up event is returned to start a new connection.
++                # straight away.
++                # IMPORTANT: in this case, the kill switch is **not** disabled.
++                return events.Up(EventContext(connection=self.context.reconnection))
++
++        protocol = self.context.connection.protocol
++        ks_mode = self.context.connection.settings.features.kill_switch
  
 -        def _on_ipv6_leak_protection_disabled(_future: Future):
-+        ks_mode = self.context.connection.settings.features.kill_switch
-+
 +        def _on_call_back(_future: Future):
              _future.result()
  
@@ -261,19 +1151,35 @@ diff -rupN original/proton/vpn/connection/states.py proton/vpn/connection/states
 -        future.add_done_callback(_on_ipv6_leak_protection_disabled)
 +
 +        if ks_mode < KillSwitchMode.HARD:
-+            future_ipv6 = self.context.connection.disable_ipv6_leak_protection()
-+            future_ipv6.add_done_callback(_on_call_back)
 +
-+            future_ipv4 = self.context.connection.disable_leak_protection()
-+            future_ipv4.add_done_callback(_on_call_back)
++            if not self.context.reconnection:
++                future_ipv6 = self.context.connection.disable_ipv6_leak_protection()
++                future_ipv6.add_done_callback(_on_call_back)
 +
-+        future_route = self.context.connection.disable_route()
-+        future_route.add_done_callback(_on_call_back)
++            if protocol != "wireguard":
++                future_leak = self.context.connection.disable_leak_protection()
++                future_leak.add_done_callback(_on_call_back)
++
++        if protocol == "wireguard" and ks_mode > KillSwitchMode.DISABLED:
++
++            if ks_mode == KillSwitchMode.HARD:
++                self.context.connection.enable_leak_protection().result()
++
++            process = script.run_wg(False, WIREGUARD_DEVICE_NAME, WIREGUARD_FW_MARK)
++
++            if process[1] != "":
++                logger.error(
++                    f"Error while disabling kill switch: {process[1]}",
++                    category="CONN", event="ERROR"
++                )
++
++        if self.context.reconnection:
++            return events.Up(EventContext(connection=self.context.reconnection))
 +
          self.context.connection.remove_persistence()
          return None
  
-@@ -176,6 +188,9 @@ class Connecting(State):
+@@ -176,6 +207,9 @@ class Connecting(State):
      """
      type = ConnectionStateEnum.CONNECTING
  
@@ -283,11 +1189,15 @@ diff -rupN original/proton/vpn/connection/states.py proton/vpn/connection/states
      def _on_event(self, event: events.Event):
          if isinstance(event, events.Connected):
              return Connected(StateContext(event=event, connection=event.context.connection))
-@@ -206,12 +221,44 @@ class Connecting(State):
+@@ -206,12 +240,48 @@ class Connecting(State):
          return self
  
      def run_tasks(self):
 -        def _on_ipv6_leak_protection_enabled(_future: Future):
++
++        if not self.context.connection:
++            return None
++
 +        ks_mode: KillSwitchMode = self.context.connection.settings.features.kill_switch
 +
 +        def _on_disabled_task(_future: Future):
@@ -331,7 +1241,7 @@ diff -rupN original/proton/vpn/connection/states.py proton/vpn/connection/states
  
  
  class Connected(State):
-@@ -248,6 +295,38 @@ class Connected(State):
+@@ -248,6 +318,62 @@ class Connected(State):
          return self
  
      def run_tasks(self):
@@ -346,7 +1256,19 @@ diff -rupN original/proton/vpn/connection/states.py proton/vpn/connection/states
 +            def _on_done(_future: Future):
 +                _future.result()
 +
-+            self.context.connection.enable_leak_protection().add_done_callback(_on_connected)
++            protocol = self.context.connection.protocol
++            if protocol == "wireguard":
++                process = script.run_wg(True, WIREGUARD_DEVICE_NAME, WIREGUARD_FW_MARK)
++                if process[1] != "":
++                    logger.error(
++                        f"Error while enabling kill switch: {process[1]}",
++                        category="CONN", event="ERROR"
++                    )
++                    self.context.connection.stop()
++                    return events.Disconnected(EventContext(connection=self.context.connection))
++                self.context.connection.disable_route().add_done_callback(_on_done)
++            else:
++                self.context.connection.enable_leak_protection().add_done_callback(_on_connected)
 +
 +        def _on_soft_task():
 +
@@ -357,7 +1279,19 @@ diff -rupN original/proton/vpn/connection/states.py proton/vpn/connection/states
 +            def _on_done(_future: Future):
 +                _future.result()
 +
-+            self.context.connection.enable_leak_protection().add_done_callback(_on_connected)
++            protocol = self.context.connection.protocol
++            if protocol == "wireguard":
++                process = script.run_wg(True, WIREGUARD_DEVICE_NAME, WIREGUARD_FW_MARK)
++                if process[1] != "":
++                    logger.error(
++                        f"Error while enabling kill switch: {process[1]}",
++                        category="CONN", event="ERROR"
++                    )
++                    self.context.connection.stop()
++                    return events.Disconnected(EventContext(connection=self.context.connection))
++                self.context.connection.disable_route().add_done_callback(_on_done)
++            else:
++                self.context.connection.enable_leak_protection().add_done_callback(_on_connected)
 +
 +        match ks_mode:
 +            case KillSwitchMode.DISABLED:
@@ -371,9 +1305,17 @@ diff -rupN original/proton/vpn/connection/states.py proton/vpn/connection/states
  
  
 diff -rupN original/proton/vpn/connection/vpnconfiguration.py proton/vpn/connection/vpnconfiguration.py
---- original/proton/vpn/connection/vpnconfiguration.py	2023-07-22 13:27:07.720944148 +0700
-+++ proton/vpn/connection/vpnconfiguration.py	2023-07-20 10:22:48.352370956 +0700
-@@ -28,8 +28,9 @@ from jinja2 import Environment, BaseLoad
+--- original/proton/vpn/connection/vpnconfiguration.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/connection/vpnconfiguration.py	2023-07-24 10:58:19.928486571 +0700
+@@ -21,6 +21,7 @@ You should have received a copy of the G
+ along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
+ """
+ import ipaddress
++import json
+ import tempfile
+ import os
+ 
+@@ -28,8 +29,9 @@ from jinja2 import Environment, BaseLoad
  from proton.utils.environment import ExecutionEnvironment
  
  from proton.vpn.connection.constants import \
@@ -384,7 +1326,7 @@ diff -rupN original/proton/vpn/connection/vpnconfiguration.py proton/vpn/connect
  
  
  class DefaultSettings(Settings):
-@@ -132,12 +133,13 @@ class OVPNConfig(VPNConfiguration):
+@@ -132,12 +134,13 @@ class OVPNConfig(VPNConfiguration):
              string: configuration file
          """
          ports = self._vpnserver.tcp_ports if "tcp" == self._protocol else self._vpnserver.udp_ports
@@ -401,7 +1343,7 @@ diff -rupN original/proton/vpn/connection/vpnconfiguration.py proton/vpn/connect
              "custom_dns": len(self.settings.dns_custom_ips) > 0,
          }
 diff -rupN original/proton/vpn/connection/vpnconnection.py proton/vpn/connection/vpnconnection.py
---- original/proton/vpn/connection/vpnconnection.py	2023-07-22 13:27:07.720944148 +0700
+--- original/proton/vpn/connection/vpnconnection.py	2023-07-24 11:01:59.000000000 +0700
 +++ proton/vpn/connection/vpnconnection.py	2023-07-20 14:51:25.358409503 +0700
 @@ -304,6 +304,42 @@ class VPNConnection(ABC):
          """
@@ -446,6 +1388,40 @@ diff -rupN original/proton/vpn/connection/vpnconnection.py proton/vpn/connection
      def enable_ipv6_leak_protection(self) -> Future:
          """
          Prevents IPv6 leaks.
+diff -rupN original/proton/vpn/core_api/api.py proton/vpn/core_api/api.py
+--- original/proton/vpn/core_api/api.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/core_api/api.py	2023-07-24 09:55:53.051106891 +0700
+@@ -19,6 +19,8 @@ GNU General Public License for more deta
+ You should have received a copy of the GNU General Public License
+ along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
+ """
++import math
++
+ from proton.vpn.core_api.connection import VPNConnectorWrapper
+ from proton.vpn.core_api.settings import Settings, SettingsPersistence
+ from proton.vpn.core_api.session import SessionHolder, ClientTypeMetadata
+@@ -134,6 +136,21 @@ class ProtonVPNAPI:
+         """
+         return self._session_holder.submit_bug_report(bug_report)
+ 
++    def refresh_session(self) -> None | int:
++        """
++        Refreshes the session.
++        :returns: The new session expiration timestamp or None if the session
++        """
++        time_remain = (self._session_holder.session.vpn_account.vpn_credentials
++                       .pubkey_credentials.certificate_validity_remaining)
++
++        if time_remain > 3600:
++            return int(time_remain) - 3600
++
++        self._session_holder.session.refresh()
++
++        self._session_holder.session.fetch_session_data()
++
+     def logout(self):
+         """
+         Logs the current user out.
 diff -rupN original/proton/vpn/core_api/certificate.py proton/vpn/core_api/certificate.py
 --- original/proton/vpn/core_api/certificate.py	1970-01-01 07:00:00.000000000 +0700
 +++ proton/vpn/core_api/certificate.py	2023-07-20 10:22:48.351370957 +0700
@@ -488,8 +1464,27 @@ diff -rupN original/proton/vpn/core_api/certificate.py proton/vpn/core_api/certi
 +        f.write(constants.CA_CERT)
 +    with open(TLS_AUTH, "w") as f:
 +        f.write(constants.TLS_AUTH)
+diff -rupN original/proton/vpn/core_api/session.py proton/vpn/core_api/session.py
+--- original/proton/vpn/core_api/session.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/core_api/session.py	2023-07-24 10:58:19.946486631 +0700
+@@ -67,6 +67,7 @@ class SessionHolder:
+             account_name=username,
+             override_class=VPNSession
+         )
++
+         return self._session
+ 
+     @property
+@@ -76,7 +77,6 @@ class SessionHolder:
+             self._session = self._proton_sso.get_default_session(
+                 override_class=VPNSession
+             )
+-
+         return self._session
+ 
+     def submit_bug_report(self, bug_report: BugReportForm):
 diff -rupN original/proton/vpn/core_api/settings.py proton/vpn/core_api/settings.py
---- original/proton/vpn/core_api/settings.py	2023-07-22 13:27:07.718944135 +0700
+--- original/proton/vpn/core_api/settings.py	2023-07-24 11:01:59.000000000 +0700
 +++ proton/vpn/core_api/settings.py	2023-07-22 13:41:26.669099394 +0700
 @@ -36,6 +36,12 @@ class NetShield(IntEnum):  # pylint: dis
      BLOCK_ADS_AND_TRACKING = 2
@@ -529,17 +1524,18 @@ diff -rupN original/proton/vpn/core_api/settings.py proton/vpn/core_api/settings
          )
  
 diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py
---- original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py	2023-07-22 13:27:07.722944160 +0700
-+++ proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py	2023-07-22 13:47:58.913350106 +0700
-@@ -19,11 +19,14 @@ GNU General Public License for more deta
+--- original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py	2023-07-24 08:35:51.133148844 +0700
+@@ -19,22 +19,18 @@ GNU General Public License for more deta
  You should have received a copy of the GNU General Public License
  along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
  """
 +from ipaddress import ip_network
  from concurrent.futures import Future
 +
-+from proton.session.transports import AlternativeRoutingTransport
  from proton.vpn import logging
++from proton.vpn.connection.constants import HUMAN_READABLE_ID, INTERFACE_NAME, ROUTE_HUMAN_READABLE_ID, \
++    ROUTE_INTERFACE_NAME, IPV6_HUMAN_READABLE_ID, IPV6_INTERFACE_NAME
  from proton.vpn.killswitch.backend.linux.networkmanager.nmclient import NMClient
  from proton.vpn.killswitch.backend.linux.networkmanager.killswitch_connection import (
 -    KillSwitchConnection, KillSwitchGeneralConfig, KillSwitchIPConfig
@@ -547,17 +1543,18 @@ diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitc
  )
  
  logger = logging.getLogger(__name__)
-@@ -34,6 +37,9 @@ INTERFACE_NAME = "pvpnksintrf0"
- IPV6_HUMAN_READABLE_ID = "pvpn-killswitch-ipv6"
- IPV6_INTERFACE_NAME = "ipv6leakintrf0"
- 
-+ROUTE_HUMAN_READABLE_ID = "pvpn-killswitch-route"
-+ROUTE_INTERFACE_NAME = "pvpnksroute0"
-+
- 
+-
+-HUMAN_READABLE_ID = "pvpn-killswitch"
+-INTERFACE_NAME = "pvpnksintrf0"
+-
+-IPV6_HUMAN_READABLE_ID = "pvpn-killswitch-ipv6"
+-IPV6_INTERFACE_NAME = "ipv6leakintrf0"
+-
+-
  class KillSwitchConnectionHandler:
      """Kill switch connection management."""
-@@ -57,21 +63,104 @@ class KillSwitchConnectionHandler:
+ 
+@@ -57,21 +53,104 @@ class KillSwitchConnectionHandler:
      @property
      def is_killswitch_connection_active(self) -> bool:
          """Returns if general kill switch is active or not."""
@@ -580,7 +1577,8 @@ diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitc
 +            ignore_auto_dns=True,
 +            route_metric=97
 +        )
-+
+ 
+-    def remove(self):
 +        ipv6_config = KillSwitchIPConfig(
 +            addresses=["fdeb:446c:912d:08da::/64"],
 +            dns=["::1"],
@@ -598,8 +1596,7 @@ diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitc
 +        logger.info("Enabling general kill switch...")
 +        future = self.nm_client.add_connection_async(kill_switch.connection)
 +        return future
- 
--    def remove(self):
++
 +    def remove(self) -> Future:
          """Removes general kill switch from NetworkManager."""
 -        raise NotImplementedError
@@ -667,7 +1664,7 @@ diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitc
      def is_ipv6_leak_protection_connection_active(self) -> bool:
          """Returns if IPv6 kill switch is active or not."""
          return bool(self.nm_client.get_active_connection(IPV6_HUMAN_READABLE_ID))
-@@ -89,7 +178,7 @@ class KillSwitchConnectionHandler:
+@@ -89,7 +168,7 @@ class KillSwitchConnectionHandler:
              dns_priority=-1400,
              gateway="fdeb:446c:912d:08da::1",
              ignore_auto_dns=True,
@@ -676,13 +1673,13 @@ diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitc
          )
          killswitch = KillSwitchConnection(
              general_config,
-@@ -103,3 +192,4 @@ class KillSwitchConnectionHandler:
+@@ -103,3 +182,4 @@ class KillSwitchConnectionHandler:
          connection = self.nm_client.get_connection(conn_id=IPV6_HUMAN_READABLE_ID)
          future = self.nm_client.remove_connection_async(connection)
          return future
 +
 diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py
---- original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py	2023-07-22 13:27:07.722944160 +0700
+--- original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py	2023-07-24 11:01:59.000000000 +0700
 +++ proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py	2023-07-22 12:50:07.113690747 +0700
 @@ -32,14 +32,29 @@ class KillSwitchGeneralConfig:  # pylint
  
@@ -750,8 +1747,8 @@ diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitc
                  )
  
 diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py
---- original/proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py	2023-07-22 13:27:07.722944160 +0700
-+++ proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py	2023-07-22 13:45:29.544496321 +0700
+--- original/proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py	2023-07-24 10:58:19.939486607 +0700
 @@ -23,6 +23,9 @@ import sys
  from concurrent.futures import Future
  
@@ -887,15 +1884,7 @@ diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/nmkillswi
                  custom_future.set_result(None)
              except GLib.GError:
                  traceback = sys.exc_info()[2]
-@@ -94,7 +176,6 @@ class NMKillSwitch(KillSwitch):
-                         "Unable to add IPv6 connection"
-                     ).with_traceback(traceback)
-                 )
--
-         future = self._ks_handler.add_ipv6_leak_protection()
-         future.add_done_callback(_on_ivp6_leak_protection_enabled)
-         return custom_future
-@@ -109,6 +190,7 @@ class NMKillSwitch(KillSwitch):
+@@ -109,6 +191,7 @@ class NMKillSwitch(KillSwitch):
          def _on_ivp6_leak_protection_disabled(_future: Future):
              try:
                  _future.result()
@@ -903,7 +1892,7 @@ diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/nmkillswi
                  custom_future.set_result(None)
              except GLib.GError:
                  traceback = sys.exc_info()[2]
-@@ -117,7 +199,6 @@ class NMKillSwitch(KillSwitch):
+@@ -117,7 +200,6 @@ class NMKillSwitch(KillSwitch):
                          "Unable to remove IPv6 connection"
                      ).with_traceback(traceback)
                  )
@@ -912,7 +1901,7 @@ diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/nmkillswi
          future.add_done_callback(_on_ivp6_leak_protection_disabled)
          return custom_future
 diff -rupN original/proton/vpn/killswitch/interface/killswitch.py proton/vpn/killswitch/interface/killswitch.py
---- original/proton/vpn/killswitch/interface/killswitch.py	2023-07-22 13:27:07.721944154 +0700
+--- original/proton/vpn/killswitch/interface/killswitch.py	2023-07-24 11:01:59.000000000 +0700
 +++ proton/vpn/killswitch/interface/killswitch.py	2023-07-22 10:11:26.973353094 +0700
 @@ -47,7 +47,7 @@ class KillSwitch:
          except RuntimeError as excp:
@@ -958,7 +1947,7 @@ diff -rupN original/proton/vpn/killswitch/interface/killswitch.py proton/vpn/kil
          Disables IPv6 kill switch to prevent leaks.
  
 diff -rupN original/proton/vpn/session/client_config.py proton/vpn/session/client_config.py
---- original/proton/vpn/session/client_config.py	2023-07-22 13:27:07.727944192 +0700
+--- original/proton/vpn/session/client_config.py	2023-07-24 11:01:59.000000000 +0700
 +++ proton/vpn/session/client_config.py	2023-07-20 19:29:53.140907883 +0700
 @@ -20,10 +20,11 @@ from __future__ import annotations
  from dataclasses import dataclass
@@ -1008,3 +1997,63 @@ diff -rupN original/proton/vpn/session/client_config.py proton/vpn/session/clien
              return ClientConfig(
                  # No need to copy openvpn_ports, OpenVPNPorts takes care of it.
                  OpenVPNPorts.from_dict(openvpn_ports),
+diff -rupN original/proton/vpn/session/credentials.py proton/vpn/session/credentials.py
+--- original/proton/vpn/session/credentials.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/session/credentials.py	2023-07-24 07:10:52.457066157 +0700
+@@ -22,6 +22,7 @@ import base64
+ from dataclasses import dataclass
+ 
+ from typing import Optional
++
+ from proton.vpn.session.certificates import Certificate
+ from proton.vpn.session.dataclasses import VPNCertificate
+ from proton.vpn.session.exceptions import (VPNCertificateExpiredError,
+diff -rupN original/proton/vpn/session/key_mgr.py proton/vpn/session/key_mgr.py
+--- original/proton/vpn/session/key_mgr.py	2023-07-24 11:01:59.000000000 +0700
++++ proton/vpn/session/key_mgr.py	2023-07-24 09:21:08.259603304 +0700
+@@ -62,7 +62,8 @@ class KeyHandler:
+         pem_data = "".join(open(ed25519sk_file).readlines())
+         key = serialization.load_pem_private_key(pem_data.encode("ascii"), password=None, backend=backend_default)
+         assert isinstance(key, cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey)
+-        private_key = key.private_bytes(Encoding.Raw, PrivateFormat.Raw, encryption_algorithm=serialization.NoEncryption())
++        private_key = key.private_bytes(Encoding.Raw, PrivateFormat.Raw,
++                                        encryption_algorithm=serialization.NoEncryption())
+         return KeyHandler(private_key=private_key)
+ 
+     @property
+@@ -71,7 +72,8 @@ class KeyHandler:
+ 
+     @property
+     def ed25519_sk_bytes(self) -> bytes:
+-        return self._private_key.private_bytes(Encoding.Raw, PrivateFormat.Raw, encryption_algorithm=serialization.NoEncryption())
++        return self._private_key.private_bytes(Encoding.Raw, PrivateFormat.Raw,
++                                               encryption_algorithm=serialization.NoEncryption())
+ 
+     @property
+     def ed25519_pk_bytes(self) -> bytes:
+@@ -83,11 +85,13 @@ class KeyHandler:
+ 
+     @property
+     def ed25519_sk_pem(self) -> str:
+-        return self._private_key.private_bytes(encoding=Encoding.PEM, format=PrivateFormat.PKCS8, encryption_algorithm=serialization.NoEncryption()).decode('ascii')
++        return self._private_key.private_bytes(encoding=Encoding.PEM, format=PrivateFormat.PKCS8,
++                                               encryption_algorithm=serialization.NoEncryption()).decode('ascii')
+ 
+     @property
+     def ed25519_pk_pem(self) -> str:
+-        return self._public_key.public_bytes(encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo).decode('ascii')
++        return self._public_key.public_bytes(encoding=serialization.Encoding.PEM,
++                                             format=serialization.PublicFormat.SubjectPublicKeyInfo).decode('ascii')
+ 
+     @property
+     def x25519_sk_bytes(self) -> bytes:
+@@ -108,7 +112,8 @@ class KeyHandler:
+     @classmethod
+     def __generate_key_pair(cls, private_key=None):
+         if private_key:
+-            private_key = cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey.from_private_bytes(private_key)
++            private_key = (cryptography.hazmat.primitives.asymmetric
++                           .ed25519.Ed25519PrivateKey.from_private_bytes(private_key))
+         else:
+             private_key = cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey.generate()
+         public_key = private_key.public_key()
