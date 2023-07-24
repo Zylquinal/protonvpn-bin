@@ -1,6 +1,6 @@
 diff -rupN original/proton/session/api.py proton/session/api.py
---- original/proton/session/api.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/session/api.py	2023-07-24 09:55:53.047106877 +0700
+--- original/proton/session/api.py	2023-07-24 23:09:03.569606649 +0700
++++ proton/session/api.py	2023-07-24 23:08:04.933434110 +0700
 @@ -20,7 +20,8 @@ from __future__ import annotations
  from typing import *
  
@@ -363,7 +363,7 @@ diff -rupN original/proton/session/api.py proton/session/api.py
 -
 diff -rupN original/proton/vpn/app/gtk/services/refresher/session_refresher.py proton/vpn/app/gtk/services/refresher/session_refresher.py
 --- original/proton/vpn/app/gtk/services/refresher/session_refresher.py	1970-01-01 07:00:00.000000000 +0700
-+++ proton/vpn/app/gtk/services/refresher/session_refresher.py	2023-07-24 09:55:53.035106836 +0700
++++ proton/vpn/app/gtk/services/refresher/session_refresher.py	2023-07-24 23:08:04.934434113 +0700
 @@ -0,0 +1,69 @@
 +import logging
 +from datetime import timedelta
@@ -435,8 +435,8 @@ diff -rupN original/proton/vpn/app/gtk/services/refresher/session_refresher.py p
 +        )
 +
 diff -rupN original/proton/vpn/app/gtk/services/refresher/vpn_data_refresher.py proton/vpn/app/gtk/services/refresher/vpn_data_refresher.py
---- original/proton/vpn/app/gtk/services/refresher/vpn_data_refresher.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/app/gtk/services/refresher/vpn_data_refresher.py	2023-07-24 08:35:51.129148832 +0700
+--- original/proton/vpn/app/gtk/services/refresher/vpn_data_refresher.py	2023-07-24 23:09:03.541606567 +0700
++++ proton/vpn/app/gtk/services/refresher/vpn_data_refresher.py	2023-07-24 23:08:04.934434113 +0700
 @@ -28,6 +28,7 @@ from typing import Callable, Any, Dict
  from gi.repository import GLib, GObject
  
@@ -489,8 +489,8 @@ diff -rupN original/proton/vpn/app/gtk/services/refresher/vpn_data_refresher.py 
      def _refresh_vpn_session_and_then_enable(self):
          logger.warning("Reloading VPN session...")
 diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/menu.py proton/vpn/app/gtk/widgets/headerbar/menu/menu.py
---- original/proton/vpn/app/gtk/widgets/headerbar/menu/menu.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/app/gtk/widgets/headerbar/menu/menu.py	2023-07-23 18:38:11.915762499 +0700
+--- original/proton/vpn/app/gtk/widgets/headerbar/menu/menu.py	2023-07-24 23:09:03.548606587 +0700
++++ proton/vpn/app/gtk/widgets/headerbar/menu/menu.py	2023-07-24 23:12:43.320252666 +0700
 @@ -35,6 +35,8 @@ from proton.vpn.app.gtk.widgets.headerba
  
  from proton.session.exceptions import ProtonAPINotReachable
@@ -540,7 +540,7 @@ diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/menu.py proton/vpn
          self.logout_action.connect(
              "activate", self._on_logout_clicked
          )
-@@ -155,6 +169,18 @@ class Menu(Gio.Menu):  # pylint: disable
+@@ -158,6 +172,18 @@ class Menu(Gio.Menu):  # pylint: disable
          about_dialog.run()
          about_dialog.destroy()
  
@@ -560,8 +560,8 @@ diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/menu.py proton/vpn
          logger.info("Logout button clicked", category="ui", subcategory="logout", event="click")
          self.logout_enabled = False
 diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py
---- original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py	2023-07-22 15:26:45.549458079 +0700
+--- original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py	2023-07-24 23:09:03.549606590 +0700
++++ proton/vpn/app/gtk/widgets/headerbar/menu/settings/connection_settings.py	2023-07-24 23:15:00.164654612 +0700
 @@ -19,6 +19,7 @@ GNU General Public License for more deta
  You should have received a copy of the GNU General Public License
  along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
@@ -578,37 +578,49 @@ diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connectio
 +from proton.vpn.killswitch.interface import KillSwitch
  
  
- class ConnectionSettings(Gtk.Box):
-@@ -35,6 +38,8 @@ class ConnectionSettings(Gtk.Box):
+ class ConnectionSettings(Gtk.Box):  # pylint: disable=too-many-instance-attributes
+@@ -35,11 +38,15 @@ class ConnectionSettings(Gtk.Box):  # py
      VPN_ACCELERATOR_LABEL = "VPN Accelerator"
      VPN_ACCELERATOR_DESCRIPTION = "Increase your connection speed by up to 400% "\
          "with performance enhancing technologies."
++
+     MODERATE_NAT_LABEL = "Moderate NAT"
+     MODERATE_NAT_DESCRIPTION = "Disables randomization of the local addresses mapping. "\
+         "This can slightly reduce connection security, but should allow direct "\
+         "connections for online gaming and similar purposes."
+ 
 +    KILL_SWITCH_LABEL = "VPN Kill Switch"
 +    KILL_SWITCH_DESCRIPTION = "Automatically block all internet traffic "
- 
++
      def __init__(self, controller: Controller, notification_bar: NotificationBar):
          super().__init__(orientation=Gtk.Orientation.VERTICAL)
-@@ -47,6 +52,8 @@ class ConnectionSettings(Gtk.Box):
-         self.vpn_accelerator_row = None
+         self._controller = controller
+@@ -52,6 +59,8 @@ class ConnectionSettings(Gtk.Box):  # py
          self.protocol_row = None
+         self.moderate_nat_row = None
  
 +        self.kill_switch_row = None
 +
          self.get_style_context().add_class("setting-category")
  
      def build_ui(self):
-@@ -55,6 +62,7 @@ class ConnectionSettings(Gtk.Box):
+@@ -60,8 +69,11 @@ class ConnectionSettings(Gtk.Box):  # py
          self.pack_start(CategoryHeader(self.CATEGORY_NAME), False, False, 0)
          self.build_protocol()
          self.build_vpn_accelerator()
-+        self.build_kill_switch()
++
+         self.build_moderate_nat()
  
++        self.build_kill_switch()
++
      @property
      def protocol(self) -> str:
-@@ -80,6 +88,18 @@ class ConnectionSettings(Gtk.Box):
-         self._controller.get_settings().features.vpn_accelerator = newvalue
-         self._controller.save_settings()
- 
+         """Shortcut property that returns the current `protocol` setting"""
+@@ -96,6 +108,17 @@ class ConnectionSettings(Gtk.Box):  # py
+         """Shortcut property that sets the new `moderate_nat` setting and
+         stores to disk."""
+         self._controller.get_settings().features.moderate_nat = newvalue
++
 +    @property
 +    def kill_switch(self) -> KillSwitchMode:
 +        """Shortcut property that returns the current `kill_switch` setting"""
@@ -619,12 +631,10 @@ diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connectio
 +        """Shortcut property that sets the new `kill_switch` setting and
 +        stores to disk."""
 +        self._controller.get_settings().features.kill_switch = newvalue
-+        self._controller.save_settings()
-+
+         self._controller.save_settings()
+ 
      def build_protocol(self):
-         """Builds and adds the `protocol` setting to the widget."""
-         def on_combobox_changed(combobox):
-@@ -100,6 +120,7 @@ class ConnectionSettings(Gtk.Box):
+@@ -118,6 +141,7 @@ class ConnectionSettings(Gtk.Box):  # py
          human_readeable_protocol = {
              "openvpn-tcp": "OpenVPN (TCP)",
              "openvpn-udp": "OpenVPN (UDP)",
@@ -632,10 +642,10 @@ diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connectio
          }
  
          for protocol in available_protocols:
-@@ -142,3 +163,70 @@ class ConnectionSettings(Gtk.Box):
-         vpn_accelerator_switch.set_state(self.vpn_accelerator)
-         vpn_accelerator_switch.connect("state-set", on_switch_state)
-         self.pack_start(self.vpn_accelerator_row, False, False, 0)
+@@ -186,3 +210,70 @@ class ConnectionSettings(Gtk.Box):  # py
+         switch.set_state(self.moderate_nat)
+         switch.connect("state-set", on_switch_state)
+         self.pack_start(self.moderate_nat_row, False, False, 0)
 +
 +    def build_kill_switch(self):
 +        """Builds and adds the `kill_switch` setting to the widget."""
@@ -703,10 +713,9 @@ diff -rupN original/proton/vpn/app/gtk/widgets/headerbar/menu/settings/connectio
 +        )
 +
 +        self.pack_start(self.kill_switch_row, False, False, 0)
-\ No newline at end of file
 diff -rupN original/proton/vpn/backend/linux/networkmanager/core/networkmanager.py proton/vpn/backend/linux/networkmanager/core/networkmanager.py
---- original/proton/vpn/backend/linux/networkmanager/core/networkmanager.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/backend/linux/networkmanager/core/networkmanager.py	2023-07-23 16:43:37.615433338 +0700
+--- original/proton/vpn/backend/linux/networkmanager/core/networkmanager.py	2023-07-24 23:09:03.562606628 +0700
++++ proton/vpn/backend/linux/networkmanager/core/networkmanager.py	2023-07-24 23:08:04.934434113 +0700
 @@ -69,7 +69,6 @@ class LinuxNetworkManager(VPNConnection)
          """
          Starts a VPN connection using NetworkManager.
@@ -800,7 +809,7 @@ diff -rupN original/proton/vpn/backend/linux/networkmanager/core/networkmanager.
              self, vpn_connection: NM.VpnConnection, state: int, reason: int
 diff -rupN original/proton/vpn/backend/linux/networkmanager/protocol/wireguard/__init__.py proton/vpn/backend/linux/networkmanager/protocol/wireguard/__init__.py
 --- original/proton/vpn/backend/linux/networkmanager/protocol/wireguard/__init__.py	1970-01-01 07:00:00.000000000 +0700
-+++ proton/vpn/backend/linux/networkmanager/protocol/wireguard/__init__.py	2023-07-22 15:29:16.728259585 +0700
++++ proton/vpn/backend/linux/networkmanager/protocol/wireguard/__init__.py	2023-07-24 23:08:04.935434116 +0700
 @@ -0,0 +1,3 @@
 +from proton.vpn.backend.linux.networkmanager.protocol.wireguard.wireguard import WireGuardUDP as WireGuard
 +
@@ -808,7 +817,7 @@ diff -rupN original/proton/vpn/backend/linux/networkmanager/protocol/wireguard/_
 \ No newline at end of file
 diff -rupN original/proton/vpn/backend/linux/networkmanager/protocol/wireguard/wireguard.py proton/vpn/backend/linux/networkmanager/protocol/wireguard/wireguard.py
 --- original/proton/vpn/backend/linux/networkmanager/protocol/wireguard/wireguard.py	1970-01-01 07:00:00.000000000 +0700
-+++ proton/vpn/backend/linux/networkmanager/protocol/wireguard/wireguard.py	2023-07-23 16:45:49.557699684 +0700
++++ proton/vpn/backend/linux/networkmanager/protocol/wireguard/wireguard.py	2023-07-24 23:08:04.935434116 +0700
 @@ -0,0 +1,116 @@
 +import time
 +import uuid
@@ -927,8 +936,8 @@ diff -rupN original/proton/vpn/backend/linux/networkmanager/protocol/wireguard/w
 +    def _validate(cls):
 +        return True
 diff -rupN original/proton/vpn/connection/constants.py proton/vpn/connection/constants.py
---- original/proton/vpn/connection/constants.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/connection/constants.py	2023-07-23 18:32:35.115476705 +0700
+--- original/proton/vpn/connection/constants.py	2023-07-24 23:09:03.559606620 +0700
++++ proton/vpn/connection/constants.py	2023-07-24 23:08:04.935434116 +0700
 @@ -55,6 +55,28 @@ A1gTTlpi7A==
  -----END CERTIFICATE-----
  """
@@ -1011,8 +1020,8 @@ diff -rupN original/proton/vpn/connection/constants.py proton/vpn/connection/con
 +WIREGUARD_FW_MARK = 1234
 +WIREGUARD_DEVICE_NAME = "proton0"
 diff -rupN original/proton/vpn/connection/interfaces.py proton/vpn/connection/interfaces.py
---- original/proton/vpn/connection/interfaces.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/connection/interfaces.py	2023-07-20 19:29:53.148907931 +0700
+--- original/proton/vpn/connection/interfaces.py	2023-07-24 23:09:03.559606620 +0700
++++ proton/vpn/connection/interfaces.py	2023-07-24 23:12:43.325252681 +0700
 @@ -156,6 +156,14 @@ class Features:
          return None
  
@@ -1030,7 +1039,7 @@ diff -rupN original/proton/vpn/connection/interfaces.py proton/vpn/connection/in
          :return: port forwarding state value
 diff -rupN original/proton/vpn/connection/script.py proton/vpn/connection/script.py
 --- original/proton/vpn/connection/script.py	1970-01-01 07:00:00.000000000 +0700
-+++ proton/vpn/connection/script.py	2023-07-23 21:58:11.328465236 +0700
++++ proton/vpn/connection/script.py	2023-07-24 23:08:04.935434116 +0700
 @@ -0,0 +1,63 @@
 +import logging
 +import subprocess
@@ -1096,8 +1105,8 @@ diff -rupN original/proton/vpn/connection/script.py proton/vpn/connection/script
 +    route_ks = ROUTE_HUMAN_READABLE_ID
 +    subprocess.run(['nmcli', 'connection', 'delete', general_ks, ipv6_ks, route_ks])
 diff -rupN original/proton/vpn/connection/states.py proton/vpn/connection/states.py
---- original/proton/vpn/connection/states.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/connection/states.py	2023-07-24 10:58:19.962486684 +0700
+--- original/proton/vpn/connection/states.py	2023-07-24 23:09:03.560606623 +0700
++++ proton/vpn/connection/states.py	2023-07-24 23:08:04.935434116 +0700
 @@ -21,21 +21,23 @@ along with ProtonVPN.  If not, see <http
  """
  from __future__ import annotations
@@ -1305,8 +1314,8 @@ diff -rupN original/proton/vpn/connection/states.py proton/vpn/connection/states
  
  
 diff -rupN original/proton/vpn/connection/vpnconfiguration.py proton/vpn/connection/vpnconfiguration.py
---- original/proton/vpn/connection/vpnconfiguration.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/connection/vpnconfiguration.py	2023-07-24 10:58:19.928486571 +0700
+--- original/proton/vpn/connection/vpnconfiguration.py	2023-07-24 23:09:03.560606623 +0700
++++ proton/vpn/connection/vpnconfiguration.py	2023-07-24 23:08:04.936434119 +0700
 @@ -21,6 +21,7 @@ You should have received a copy of the G
  along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
  """
@@ -1343,8 +1352,8 @@ diff -rupN original/proton/vpn/connection/vpnconfiguration.py proton/vpn/connect
              "custom_dns": len(self.settings.dns_custom_ips) > 0,
          }
 diff -rupN original/proton/vpn/connection/vpnconnection.py proton/vpn/connection/vpnconnection.py
---- original/proton/vpn/connection/vpnconnection.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/connection/vpnconnection.py	2023-07-20 14:51:25.358409503 +0700
+--- original/proton/vpn/connection/vpnconnection.py	2023-07-24 23:09:03.560606623 +0700
++++ proton/vpn/connection/vpnconnection.py	2023-07-24 23:12:43.325252681 +0700
 @@ -304,6 +304,42 @@ class VPNConnection(ABC):
          """
          self._connection_persistence.remove()
@@ -1389,8 +1398,8 @@ diff -rupN original/proton/vpn/connection/vpnconnection.py proton/vpn/connection
          """
          Prevents IPv6 leaks.
 diff -rupN original/proton/vpn/core_api/api.py proton/vpn/core_api/api.py
---- original/proton/vpn/core_api/api.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/core_api/api.py	2023-07-24 09:55:53.051106891 +0700
+--- original/proton/vpn/core_api/api.py	2023-07-24 23:09:03.558606617 +0700
++++ proton/vpn/core_api/api.py	2023-07-24 23:08:04.936434119 +0700
 @@ -19,6 +19,8 @@ GNU General Public License for more deta
  You should have received a copy of the GNU General Public License
  along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
@@ -1424,7 +1433,7 @@ diff -rupN original/proton/vpn/core_api/api.py proton/vpn/core_api/api.py
          Logs the current user out.
 diff -rupN original/proton/vpn/core_api/certificate.py proton/vpn/core_api/certificate.py
 --- original/proton/vpn/core_api/certificate.py	1970-01-01 07:00:00.000000000 +0700
-+++ proton/vpn/core_api/certificate.py	2023-07-20 10:22:48.351370957 +0700
++++ proton/vpn/core_api/certificate.py	2023-07-24 23:08:04.936434119 +0700
 @@ -0,0 +1,38 @@
 +import os.path
 +
@@ -1465,8 +1474,8 @@ diff -rupN original/proton/vpn/core_api/certificate.py proton/vpn/core_api/certi
 +    with open(TLS_AUTH, "w") as f:
 +        f.write(constants.TLS_AUTH)
 diff -rupN original/proton/vpn/core_api/session.py proton/vpn/core_api/session.py
---- original/proton/vpn/core_api/session.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/core_api/session.py	2023-07-24 10:58:19.946486631 +0700
+--- original/proton/vpn/core_api/session.py	2023-07-24 23:09:03.558606617 +0700
++++ proton/vpn/core_api/session.py	2023-07-24 23:08:04.936434119 +0700
 @@ -67,6 +67,7 @@ class SessionHolder:
              account_name=username,
              override_class=VPNSession
@@ -1484,8 +1493,8 @@ diff -rupN original/proton/vpn/core_api/session.py proton/vpn/core_api/session.p
  
      def submit_bug_report(self, bug_report: BugReportForm):
 diff -rupN original/proton/vpn/core_api/settings.py proton/vpn/core_api/settings.py
---- original/proton/vpn/core_api/settings.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/core_api/settings.py	2023-07-22 13:41:26.669099394 +0700
+--- original/proton/vpn/core_api/settings.py	2023-07-24 23:09:03.558606617 +0700
++++ proton/vpn/core_api/settings.py	2023-07-24 23:12:43.326252683 +0700
 @@ -36,6 +36,12 @@ class NetShield(IntEnum):  # pylint: dis
      BLOCK_ADS_AND_TRACKING = 2
  
@@ -1501,7 +1510,7 @@ diff -rupN original/proton/vpn/core_api/settings.py proton/vpn/core_api/settings
      "settings.json"
 @@ -51,6 +57,7 @@ class Features:
      netshield: NetShield
-     random_nat: bool
+     moderate_nat: bool
      vpn_accelerator: bool
 +    kill_switch: KillSwitchMode
      port_forwarding: bool
@@ -1509,7 +1518,7 @@ diff -rupN original/proton/vpn/core_api/settings.py proton/vpn/core_api/settings
      @staticmethod
 @@ -62,6 +69,7 @@ class Features:
              netshield=data.get("netshield", default.netshield),
-             random_nat=data.get("random_nat", default.random_nat),
+             moderate_nat=data.get("moderate_nat", default.moderate_nat),
              vpn_accelerator=data.get("vpn_accelerator", default.vpn_accelerator),
 +            kill_switch=data.get("kill_switch", default.kill_switch),
              port_forwarding=data.get("port_forwarding", default.port_forwarding),
@@ -1517,15 +1526,15 @@ diff -rupN original/proton/vpn/core_api/settings.py proton/vpn/core_api/settings
  
 @@ -76,6 +84,7 @@ class Features:
              ),
-             random_nat=True,
+             moderate_nat=False,
              vpn_accelerator=True,
 +            kill_switch=KillSwitchMode.DISABLED,
              port_forwarding=False
          )
  
 diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py
---- original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py	2023-07-24 08:35:51.133148844 +0700
+--- original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py	2023-07-24 23:09:03.561606626 +0700
++++ proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection_handler.py	2023-07-24 23:08:04.937434122 +0700
 @@ -19,22 +19,18 @@ GNU General Public License for more deta
  You should have received a copy of the GNU General Public License
  along with ProtonVPN.  If not, see <https://www.gnu.org/licenses/>.
@@ -1679,8 +1688,8 @@ diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitc
          return future
 +
 diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py
---- original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py	2023-07-22 12:50:07.113690747 +0700
+--- original/proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py	2023-07-24 23:09:03.561606626 +0700
++++ proton/vpn/killswitch/backend/linux/networkmanager/killswitch_connection.py	2023-07-24 23:08:04.937434122 +0700
 @@ -32,14 +32,29 @@ class KillSwitchGeneralConfig:  # pylint
  
  
@@ -1747,8 +1756,8 @@ diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/killswitc
                  )
  
 diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py
---- original/proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py	2023-07-24 10:58:19.939486607 +0700
+--- original/proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py	2023-07-24 23:09:03.561606626 +0700
++++ proton/vpn/killswitch/backend/linux/networkmanager/nmkillswitch.py	2023-07-24 23:08:04.937434122 +0700
 @@ -23,6 +23,9 @@ import sys
  from concurrent.futures import Future
  
@@ -1901,8 +1910,8 @@ diff -rupN original/proton/vpn/killswitch/backend/linux/networkmanager/nmkillswi
          future.add_done_callback(_on_ivp6_leak_protection_disabled)
          return custom_future
 diff -rupN original/proton/vpn/killswitch/interface/killswitch.py proton/vpn/killswitch/interface/killswitch.py
---- original/proton/vpn/killswitch/interface/killswitch.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/killswitch/interface/killswitch.py	2023-07-22 10:11:26.973353094 +0700
+--- original/proton/vpn/killswitch/interface/killswitch.py	2023-07-24 23:09:03.560606623 +0700
++++ proton/vpn/killswitch/interface/killswitch.py	2023-07-24 23:08:04.937434122 +0700
 @@ -47,7 +47,7 @@ class KillSwitch:
          except RuntimeError as excp:
              raise MissingKillSwitchBackendDetails(excp) from excp
@@ -1947,8 +1956,8 @@ diff -rupN original/proton/vpn/killswitch/interface/killswitch.py proton/vpn/kil
          Disables IPv6 kill switch to prevent leaks.
  
 diff -rupN original/proton/vpn/session/client_config.py proton/vpn/session/client_config.py
---- original/proton/vpn/session/client_config.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/session/client_config.py	2023-07-20 19:29:53.140907883 +0700
+--- original/proton/vpn/session/client_config.py	2023-07-24 23:09:03.565606637 +0700
++++ proton/vpn/session/client_config.py	2023-07-24 23:08:04.937434122 +0700
 @@ -20,10 +20,11 @@ from __future__ import annotations
  from dataclasses import dataclass
  from pathlib import Path
@@ -1998,8 +2007,8 @@ diff -rupN original/proton/vpn/session/client_config.py proton/vpn/session/clien
                  # No need to copy openvpn_ports, OpenVPNPorts takes care of it.
                  OpenVPNPorts.from_dict(openvpn_ports),
 diff -rupN original/proton/vpn/session/credentials.py proton/vpn/session/credentials.py
---- original/proton/vpn/session/credentials.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/session/credentials.py	2023-07-24 07:10:52.457066157 +0700
+--- original/proton/vpn/session/credentials.py	2023-07-24 23:09:03.565606637 +0700
++++ proton/vpn/session/credentials.py	2023-07-24 23:08:04.937434122 +0700
 @@ -22,6 +22,7 @@ import base64
  from dataclasses import dataclass
  
@@ -2009,8 +2018,8 @@ diff -rupN original/proton/vpn/session/credentials.py proton/vpn/session/credent
  from proton.vpn.session.dataclasses import VPNCertificate
  from proton.vpn.session.exceptions import (VPNCertificateExpiredError,
 diff -rupN original/proton/vpn/session/key_mgr.py proton/vpn/session/key_mgr.py
---- original/proton/vpn/session/key_mgr.py	2023-07-24 11:01:59.000000000 +0700
-+++ proton/vpn/session/key_mgr.py	2023-07-24 09:21:08.259603304 +0700
+--- original/proton/vpn/session/key_mgr.py	2023-07-24 23:09:03.565606637 +0700
++++ proton/vpn/session/key_mgr.py	2023-07-24 23:08:04.938434125 +0700
 @@ -62,7 +62,8 @@ class KeyHandler:
          pem_data = "".join(open(ed25519sk_file).readlines())
          key = serialization.load_pem_private_key(pem_data.encode("ascii"), password=None, backend=backend_default)
