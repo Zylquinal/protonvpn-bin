@@ -1,7 +1,7 @@
 # Maintainer: Zylquinal <contact@zylquinal.com>
 
 pkgname=protonvpn-bin
-pkgver=4.0.0b1
+pkgver=4.0.0b2
 pkgrel=1
 pkgdesc="ProtonVPN for Linux"
 url="https://github.com/Zylquinal/protonvpn-bin"
@@ -34,10 +34,10 @@ optdepends=('libayatana-appindicator'
 )
 
 source=("https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gnome-desktop/proton-vpn-gnome-desktop-0.2.0-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.0.0-0.17.b1.fc38.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.0.0-0.18.b2.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-keyring-linux/python3-proton-keyring-linux-0.0.1-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-keyring-linux-secretservice/python3-proton-keyring-linux-secretservice-0.0.1-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.19.0-1.fc38.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.20.0-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-connection/python3-proton-vpn-connection-0.11.0-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-killswitch/python3-proton-vpn-killswitch-0.2.0-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-killswitch-network-manager/python3-proton-vpn-killswitch-network-manager-0.2.0-1.fc38.noarch.rpm"
@@ -45,14 +45,14 @@ source=("https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gnome-desktop/
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-network-manager/python3-proton-vpn-network-manager-0.3.0-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-network-manager-openvpn/python3-proton-vpn-network-manager-openvpn-0.0.4-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-servers/python3-proton-vpn-servers-0.2.1-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-session/python3-proton-vpn-session-0.4.0-1.fc38.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-session/python3-proton-vpn-session-0.6.0-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-core/python3-proton-core-0.1.11-1.fc38.noarch.rpm"
 )
 sha256sums=('34c277026f38198a0a62fb70cc263f5f1aefaadef722f2ad9adc10096a5dce44'
-            '6f2b89f37e49265f6e8b657d67320d7c6492304eb7b22bb708b37eca605f1996'
+            '307c6038828df57400cddaed528d6b3dc3f55d24486ef6d3343b1827cf6cab38'
             'a6ba1181354b2b91dab8675844613e877551435db001e0ed02ce4f95ff1758f3'
             '78094ae4f63b376606c8b3207aa369eb2684ca85dedbe4695694e87fc4579ff5'
-            '17bf5a9f3e15fa5adbaa762eec98ac3f6ed4be1303bbd42be2ffc2ba58c99bdd'
+            '1ccf0e1bc8199d959e16ca84e28426754a06ea7b75e849ff4ccab15ad7c29dae'
             'da47ca62c2709257092d2e435818bc940a5c623dfef1a901553904ce2b668528'
             '9d4e501bdd06a6b49e10fd88a98881051c095c70f9203e1e984261608a05f2f4'
             '99bbc70a5663614d7a48f2ac24f4c1addfbec0c4fc0e9082e4d5e86e2cb48708'
@@ -60,7 +60,7 @@ sha256sums=('34c277026f38198a0a62fb70cc263f5f1aefaadef722f2ad9adc10096a5dce44'
             'c291534ba051d7c3fa8f663f9f74a268881aa58abf54a0b49dfd03eacd35a8ea'
             '359c357be220b630f1d9b348dec2f461a5a7b1931d97f80ecbdb336d6f081f4a'
             '33cface4c9a59afed3788734fa01895b194ba0781e02fedede6cecaf4c1aaebb'
-            '052f525328c20a35ba2ecd7af222eaa7fa90de443e544085a6175856d3f4f929'
+            '2b09f19143ed323244473c8302c691faec04ccbd7fc35f3506032c47f388133f'
             '9c9b9cfe6210ad3f03d4e5f95cd1317e669ebdba8c448b90f1f8728f8ead1b4e')
 
 package() {
