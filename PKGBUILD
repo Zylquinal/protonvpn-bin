@@ -1,7 +1,7 @@
 # Maintainer: Zylquinal <contact@zylquinal.com>
 
 pkgname=protonvpn-bin
-pkgver=4.0.0b2
+pkgver=4.0.0
 pkgrel=1
 pkgdesc="ProtonVPN for Linux"
 url="https://github.com/Zylquinal/protonvpn-bin"
@@ -34,10 +34,10 @@ optdepends=('libayatana-appindicator'
 )
 
 source=("https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gnome-desktop/proton-vpn-gnome-desktop-0.2.0-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.0.0-0.18.b2.fc38.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.0.0-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-keyring-linux/python3-proton-keyring-linux-0.0.1-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-keyring-linux-secretservice/python3-proton-keyring-linux-secretservice-0.0.1-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.20.0-1.fc38.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.20.1-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-connection/python3-proton-vpn-connection-0.11.0-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-killswitch/python3-proton-vpn-killswitch-0.2.0-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-killswitch-network-manager/python3-proton-vpn-killswitch-network-manager-0.2.0-1.fc38.noarch.rpm"
@@ -48,11 +48,12 @@ source=("https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gnome-desktop/
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-session/python3-proton-vpn-session-0.6.0-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-core/python3-proton-core-0.1.11-1.fc38.noarch.rpm"
 )
+
 sha256sums=('34c277026f38198a0a62fb70cc263f5f1aefaadef722f2ad9adc10096a5dce44'
-            '307c6038828df57400cddaed528d6b3dc3f55d24486ef6d3343b1827cf6cab38'
+            'f95face6da1b10b02a0b3b353b14163e6893f0c3f2fc1538cc930d0ca499b34a'
             'a6ba1181354b2b91dab8675844613e877551435db001e0ed02ce4f95ff1758f3'
             '78094ae4f63b376606c8b3207aa369eb2684ca85dedbe4695694e87fc4579ff5'
-            '1ccf0e1bc8199d959e16ca84e28426754a06ea7b75e849ff4ccab15ad7c29dae'
+            'af3fbdaec85315de6d741948c501db40f97682439d9526c83cacaf26e0a065a7'
             'da47ca62c2709257092d2e435818bc940a5c623dfef1a901553904ce2b668528'
             '9d4e501bdd06a6b49e10fd88a98881051c095c70f9203e1e984261608a05f2f4'
             '99bbc70a5663614d7a48f2ac24f4c1addfbec0c4fc0e9082e4d5e86e2cb48708'
