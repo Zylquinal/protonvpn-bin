@@ -2,7 +2,7 @@
 
 pkgname=protonvpn-bin
 pkgver=4.0.0
-pkgrel=1
+pkgrel=2
 pkgdesc="ProtonVPN for Linux"
 url="https://github.com/Zylquinal/protonvpn-bin"
 arch=('any')
@@ -46,7 +46,7 @@ source=("https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gnome-desktop/
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-network-manager-openvpn/python3-proton-vpn-network-manager-openvpn-0.0.4-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-servers/python3-proton-vpn-servers-0.2.1-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-session/python3-proton-vpn-session-0.6.0-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-core/python3-proton-core-0.1.11-1.fc38.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-core/python3-proton-core-0.1.12-1.fc38.noarch.rpm"
 )
 
 sha256sums=('34c277026f38198a0a62fb70cc263f5f1aefaadef722f2ad9adc10096a5dce44'
@@ -62,7 +62,7 @@ sha256sums=('34c277026f38198a0a62fb70cc263f5f1aefaadef722f2ad9adc10096a5dce44'
             '359c357be220b630f1d9b348dec2f461a5a7b1931d97f80ecbdb336d6f081f4a'
             '33cface4c9a59afed3788734fa01895b194ba0781e02fedede6cecaf4c1aaebb'
             '2b09f19143ed323244473c8302c691faec04ccbd7fc35f3506032c47f388133f'
-            '9c9b9cfe6210ad3f03d4e5f95cd1317e669ebdba8c448b90f1f8728f8ead1b4e')
+            '528298024998d39d340722fb65daf7586fa01b2302816a193f342ee071c691c6')
 
 package() {
     find $srcdir/ -mindepth 1 -maxdepth 1 -type d | xargs cp -r -t "$pkgdir"
