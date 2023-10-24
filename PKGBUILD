@@ -23,9 +23,11 @@ depends=('gnome-keyring'
          'python-setuptools'
          'python-keyring'
          'python-jinja'
+         'python-importlib-metadata'
          'gobject-introspection'
          'networkmanager'
          'networkmanager-openvpn'
+         'librsvg'
 )
 
 optdepends=('libayatana-appindicator'
