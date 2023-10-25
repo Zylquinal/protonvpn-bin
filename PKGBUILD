@@ -23,14 +23,21 @@ depends=('gnome-keyring'
          'python-setuptools'
          'python-keyring'
          'python-jinja'
+         'python-importlib-metadata'
          'gobject-introspection'
          'networkmanager'
          'networkmanager-openvpn'
+         'librsvg'
 )
 
 optdepends=('libayatana-appindicator'
             'gnome-shell-extension-appindicator'
             'gnome-shell-extensions'
+)
+
+conflicts=('protonvpn'
+           'protonvpn-cli'
+           'protonvpn-gui'
 )
 
 source=("https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gnome-desktop/proton-vpn-gnome-desktop-0.2.0-1.fc38.noarch.rpm"
