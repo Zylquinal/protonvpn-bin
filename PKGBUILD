@@ -35,6 +35,11 @@ optdepends=('libayatana-appindicator'
             'gnome-shell-extensions'
 )
 
+conflicts=('protonvpn'
+           'protonvpn-cli'
+           'protonvpn-gui'
+)
+
 source=("https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gnome-desktop/proton-vpn-gnome-desktop-0.2.0-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.0.0-1.fc38.noarch.rpm"
         "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-keyring-linux/python3-proton-keyring-linux-0.0.1-1.fc38.noarch.rpm"
