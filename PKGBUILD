@@ -1,7 +1,7 @@
 # Maintainer: Zylquinal <contact@zylquinal.com>
 
 pkgname=protonvpn-bin
-pkgver=4.1.0
+pkgver=4.1.2
 pkgrel=1
 pkgdesc="ProtonVPN for Linux"
 url="https://github.com/Zylquinal/protonvpn-bin"
@@ -40,37 +40,36 @@ conflicts=('protonvpn'
            'protonvpn-gui'
 )
 
-source=("https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gnome-desktop/proton-vpn-gnome-desktop-0.2.0-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.1.0-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-keyring-linux/python3-proton-keyring-linux-0.0.1-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-keyring-linux-secretservice/python3-proton-keyring-linux-secretservice-0.0.1-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.20.1-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-connection/python3-proton-vpn-connection-0.11.0-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-killswitch/python3-proton-vpn-killswitch-0.2.0-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-killswitch-network-manager/python3-proton-vpn-killswitch-network-manager-0.2.0-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-logger/python3-proton-vpn-logger-0.2.1-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-network-manager/python3-proton-vpn-network-manager-0.3.0-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-network-manager-openvpn/python3-proton-vpn-network-manager-openvpn-0.0.4-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-servers/python3-proton-vpn-servers-0.2.1-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-vpn-session/python3-proton-vpn-session-0.6.2-1.fc38.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-38-unstable/python3-proton-core/python3-proton-core-0.1.15-1.fc38.noarch.rpm"
+source=("https://repo.protonvpn.com/fedora-39-unstable/proton-vpn-gnome-desktop/proton-vpn-gnome-desktop-0.2.0-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.1.2-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-keyring-linux/python3-proton-keyring-linux-0.0.1-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-keyring-linux-secretservice/python3-proton-keyring-linux-secretservice-0.0.1-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.20.2-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-connection/python3-proton-vpn-connection-0.11.0-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-killswitch/python3-proton-vpn-killswitch-0.2.0-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-killswitch-network-manager/python3-proton-vpn-killswitch-network-manager-0.2.0-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-logger/python3-proton-vpn-logger-0.2.1-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-network-manager/python3-proton-vpn-network-manager-0.3.0-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-network-manager-openvpn/python3-proton-vpn-network-manager-openvpn-0.0.4-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-session/python3-proton-vpn-session-0.6.3-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-core/python3-proton-core-0.1.15-1.fc39.noarch.rpm"
 )
 
-sha256sums=('34c277026f38198a0a62fb70cc263f5f1aefaadef722f2ad9adc10096a5dce44'
-            '9a2aa6d6335d4be9418709dc3b902cfdd75b6d9ff19cffe8918e7ef616c6db88'
-            'a6ba1181354b2b91dab8675844613e877551435db001e0ed02ce4f95ff1758f3'
-            '78094ae4f63b376606c8b3207aa369eb2684ca85dedbe4695694e87fc4579ff5'
-            'af3fbdaec85315de6d741948c501db40f97682439d9526c83cacaf26e0a065a7'
-            'da47ca62c2709257092d2e435818bc940a5c623dfef1a901553904ce2b668528'
-            '9d4e501bdd06a6b49e10fd88a98881051c095c70f9203e1e984261608a05f2f4'
-            '99bbc70a5663614d7a48f2ac24f4c1addfbec0c4fc0e9082e4d5e86e2cb48708'
-            'd40191bd51576751899ba6f277e499765b2787486c0bc77c1381104f568795af'
-            'c291534ba051d7c3fa8f663f9f74a268881aa58abf54a0b49dfd03eacd35a8ea'
-            '359c357be220b630f1d9b348dec2f461a5a7b1931d97f80ecbdb336d6f081f4a'
-            '33cface4c9a59afed3788734fa01895b194ba0781e02fedede6cecaf4c1aaebb'
-            '6d989e859de3c90164eb39f83ceea79630852ea490bb12ae7da7f2258da819cd'
-            '43eb80a4c26e0672f49f7ebc5a24f5c36c078c4a2b931a400e74642b88e8e386')
+sha256sums=('da5cf1715c6e6adfcc6219a3fd1ec826aaaed07ab4a321264789d12e304d94ad'
+            'de96caf20c65bb1735c9b169bc281c766fde6a8ef5fc6dc0c4d6bca6508e1a2e'
+            '25c41277e5b46e7b41bd1cb2e06d46c55a3f25c54ffdc4c9702345ae747f8335'
+            '5d0033b7cffd8515d7a53e11f945e54d3ed47711869884423057cb09c1464284'
+            '4ff727b7f67f13cfb103f2d001f15557cef4d76ec37257ba9f12243ff370c66a'
+            '78f481e1b9d5afdcb50e46f2ae31ada3aece2532ce7002ed43c2b3deec72bb7c'
+            '34edf83f80ff5a9f521f61b665d3d9b47109ebb7d201aa2262bbb8f7546b1d9b'
+            '9af1c6d67cfde9b8df843db432d656b5c6249b035339dbe14607790ab8daa669'
+            '23a71b18b1f67e82969d34e96e0e9cc1936240453b3c2e94f55eb61b2d571dce'
+            '97b8634af67dc0bdb28ecbe9da338c4df48b2c5f4294d2d43d5e372c519d39da'
+            '19686b6e9ee828654a314f46497d0376240c952d072673e9de7d81026d847d08'
+            '5f4163314848959ba062aac74133643a630105f6d50551cc66283a76d9b51d0a'
+            '5493d95727f235541ee9e228f0902630bab691f670f6c7fd31225f433294b294')
 
 package() {
+    mv $srcdir/usr/lib/python3.12 $srcdir/usr/lib/python3.11
     find $srcdir/ -mindepth 1 -maxdepth 1 -type d | xargs cp -r -t "$pkgdir"
 }
