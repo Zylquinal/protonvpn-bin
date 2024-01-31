@@ -1,7 +1,7 @@
 # Maintainer: Zylquinal <contact@zylquinal.com>
 
 pkgname=protonvpn-bin
-pkgver=4.1.8
+pkgver=4.1.10
 pkgrel=1
 pkgdesc="ProtonVPN for Linux"
 url="https://github.com/Zylquinal/protonvpn-bin"
@@ -41,7 +41,7 @@ conflicts=('protonvpn'
 )
 
 source=("https://repo.protonvpn.com/fedora-39-unstable/proton-vpn-gnome-desktop/proton-vpn-gnome-desktop-0.2.0-1.fc39.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-39-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.1.8-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.1.10-1.fc39.noarch.rpm"
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-keyring-linux/python3-proton-keyring-linux-0.0.1-1.fc39.noarch.rpm"
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-keyring-linux-secretservice/python3-proton-keyring-linux-secretservice-0.0.1-1.fc39.noarch.rpm"
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.20.3-1.fc39.noarch.rpm"
@@ -51,12 +51,12 @@ source=("https://repo.protonvpn.com/fedora-39-unstable/proton-vpn-gnome-desktop/
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-logger/python3-proton-vpn-logger-0.2.1-1.fc39.noarch.rpm"
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-network-manager/python3-proton-vpn-network-manager-0.3.3-1.fc39.noarch.rpm"
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-network-manager-openvpn/python3-proton-vpn-network-manager-openvpn-0.0.4-1.fc39.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-session/python3-proton-vpn-session-0.6.4-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-session/python3-proton-vpn-session-0.6.5-1.fc39.noarch.rpm"
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-core/python3-proton-core-0.1.16-1.fc39.noarch.rpm"
 )
 
 sha256sums=('da5cf1715c6e6adfcc6219a3fd1ec826aaaed07ab4a321264789d12e304d94ad'
-            '8b8657fe915d6b9d9a6bbbd981eb2913553582b051ecd6eb9f43787f87586b50'
+            '44dc9db6809359f7fa3fc1acd003beb103eff39d1f91a049dc962379ea35f81a'
             '25c41277e5b46e7b41bd1cb2e06d46c55a3f25c54ffdc4c9702345ae747f8335'
             '5d0033b7cffd8515d7a53e11f945e54d3ed47711869884423057cb09c1464284'
             '6ec933b2fe4a14c2132bf045c5ec8a6cad0525ff11488987d019713e24acefe6'
@@ -66,7 +66,7 @@ sha256sums=('da5cf1715c6e6adfcc6219a3fd1ec826aaaed07ab4a321264789d12e304d94ad'
             '23a71b18b1f67e82969d34e96e0e9cc1936240453b3c2e94f55eb61b2d571dce'
             'e36ccb97296fe46b1e10363216b675f882625b303210e7a946ed3bd65de86ee4'
             '19686b6e9ee828654a314f46497d0376240c952d072673e9de7d81026d847d08'
-            'a6e2679446eb47635967b45c046071db0bfff74af1b2723323e06641a0bcc10f'
+            '3b15b6f7920c3e18e849bf21a30af331e10cb2512d3d79b320e6ad72b7a4d80f'
             '4fcc20bc42de1970f19823b4f27037673dcba58e126b841e0bd9be88c418c4e1')
 
 package() {
