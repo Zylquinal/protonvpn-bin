@@ -2,7 +2,7 @@
 
 pkgname=protonvpn-bin
 pkgver=4.1.10
-pkgrel=1
+pkgrel=2
 pkgdesc="ProtonVPN for Linux"
 url="https://github.com/Zylquinal/protonvpn-bin"
 arch=('any')
@@ -47,7 +47,7 @@ source=("https://repo.protonvpn.com/fedora-39-unstable/proton-vpn-gnome-desktop/
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.21.0-1.fc39.noarch.rpm"
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-connection/python3-proton-vpn-connection-0.14.2-1.fc39.noarch.rpm"
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-killswitch/python3-proton-vpn-killswitch-0.4.0-1.fc39.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-killswitch-network-manager/python3-proton-vpn-killswitch-network-manager-0.4.2-1.fc39.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-killswitch-network-manager/python3-proton-vpn-killswitch-network-manager-0.4.3-1.fc39.noarch.rpm"
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-logger/python3-proton-vpn-logger-0.2.1-1.fc39.noarch.rpm"
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-network-manager/python3-proton-vpn-network-manager-0.4.0-1.fc39.noarch.rpm"
         "https://repo.protonvpn.com/fedora-39-unstable/python3-proton-vpn-network-manager-openvpn/python3-proton-vpn-network-manager-openvpn-0.0.4-1.fc39.noarch.rpm"
@@ -62,7 +62,7 @@ sha256sums=('da5cf1715c6e6adfcc6219a3fd1ec826aaaed07ab4a321264789d12e304d94ad'
             '3a9f7fc3a00167b2400bdfceee4999d27c72e791401e581125ffd5594d779da0'
             '8b07f9039cea6aa56499a41926a0a43bcdf12273151beb385f4ee72cbba6994e'
             'b091a3181d639a422fd224f5df9209333a0b9d7e18a954d724c1df08f8681983'
-            'de47134d97199accb8381234461f14417ccd37ef67dd1ecff2a8b998589a54e5'
+            '572867396b6d680bc8fd98a7ffd9d47145463b341a07b3d4cabc4005147e9c4f'
             '23a71b18b1f67e82969d34e96e0e9cc1936240453b3c2e94f55eb61b2d571dce'
             '15cee381e4ad9f6b1b2c9c74ceaa814b7da44b62b76048749e6b25d6a80d2bfe'
             '19686b6e9ee828654a314f46497d0376240c952d072673e9de7d81026d847d08'
