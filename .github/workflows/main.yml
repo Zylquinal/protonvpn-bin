@@ -1,0 +1,24 @@
+name: PackageBuild
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Build package
+        uses: heyhusen/archlinux-package-action@v2.2.1
+        with:
+          aur: true
+          flags: '-s --noconfirm'
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: ./*.pkg.tar.zst
+          retention-days: 90
