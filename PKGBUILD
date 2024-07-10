@@ -2,7 +2,7 @@
 
 pkgname=protonvpn-bin
 pkgver=4.4.1
-pkgrel=1
+pkgrel=2
 pkgdesc="ProtonVPN for Linux"
 url="https://github.com/Zylquinal/protonvpn-bin"
 arch=('any')
@@ -44,7 +44,7 @@ conflicts=('protonvpn'
 source=("https://repo.protonvpn.com/fedora-40-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.4.1-1.fc40.noarch.rpm"
         "https://repo.protonvpn.com/fedora-40-unstable/python3-proton-keyring-linux/python3-proton-keyring-linux-0.0.2-1.fc40.noarch.rpm"
         "https://repo.protonvpn.com/fedora-40-unstable/python3-proton-keyring-linux-secretservice/python3-proton-keyring-linux-secretservice-0.0.2-1.fc40.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-40-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.26.2-1.fc40.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-40-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.27.2-1.fc40.noarch.rpm"
         "https://repo.protonvpn.com/fedora-40-unstable/python3-proton-vpn-connection/python3-proton-vpn-connection-0.16.0-1.fc40.noarch.rpm"
         "https://repo.protonvpn.com/fedora-40-unstable/python3-proton-vpn-killswitch/python3-proton-vpn-killswitch-0.5.0-1.fc40.noarch.rpm"
         "https://repo.protonvpn.com/fedora-40-unstable/python3-proton-vpn-killswitch-network-manager/python3-proton-vpn-killswitch-network-manager-0.4.5-1.fc40.noarch.rpm"
@@ -60,7 +60,7 @@ source=("https://repo.protonvpn.com/fedora-40-unstable/proton-vpn-gtk-app/proton
 sha256sums=('98746876c97e8b11ec82c1a301f6aa8c311493c4a3373abe785857dbe0d97838'
             'bfd2c4a4732b5411da5a6e528ae6b801dffdaaffb25678590b68046bc6441bca'
             '4fc57a770d29cc1331a6406b69116ec95ccfb80ca36c8c7a9a13935fda52eff6'
-            'c58610cacbc4d2aa06d7944b36cb24edc276e2a4b9198c05cf1dc687cf3edde6'
+            '2fdb0acff27985416a4301ad30f49bc65358278b0ac5bd334dca701d3f408a98'
             '3fc97514641eeb1afe07353244dd23e4bb5b35fd995a2f10b7bca73bc3280528'
             '3217de02b89978d73a94af4ac7a0ca07d48b9cdd31add7c088b90c69ebe9b48d'
             '1299fe42738964973d3711d4d05fcca83ccbcc6a05c4d821f950407bca04d0fe'

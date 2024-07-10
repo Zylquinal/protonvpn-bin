@@ -1,2 +1,7 @@
 protonvpn-bin.iml
 .idea
+proton-*
+python3-*
+pkg/
+src/
+protonvpn-bin-*
