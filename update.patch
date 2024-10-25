@@ -1,0 +1,11 @@
+--- a/vpn/app/gtk/widgets/headerbar/menu/settings/early_access.py       2024-10-25 10:15:59.000000000 +0000
++++ b/vpn/app/gtk/widgets/headerbar/menu/settings/early_access.py       2024-10-25 11:11:44.123995905 +0000
+@@ -232,6 +232,9 @@
+     def get_setting(self) -> bool:
+         """Returns if early access is enabled, if the early access package
+         was found on the system."""
++        if not self.distro_manager:
++            return False
++
+         _, beta_package_installed = self._find_installed_repo_packages()
+         return beta_package_installed
