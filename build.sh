@@ -2,7 +2,7 @@
 
 pacman-key --init
 pacman -Syu --noconfirm
-pacman -S git sudo binutils debugedit fakeroot --noconfirm
+pacman -S git sudo binutils debugedit fakeroot patch --noconfirm
 
 useradd -p "" -G wheel builder
 echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
