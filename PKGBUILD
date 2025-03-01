@@ -1,7 +1,7 @@
 # Maintainer: Zylquinal <contact@zylquinal.com>
 
 pkgname=protonvpn-bin
-pkgver=4.9.1~b0
+pkgver=4.9.3~b0
 pkgrel=1
 pkgdesc="ProtonVPN for Linux"
 url="https://github.com/Zylquinal/protonvpn-bin"
@@ -41,17 +41,17 @@ conflicts=('protonvpn'
            'protonvpn-gui'
 )
 
-source=("https://repo.protonvpn.com/fedora-41-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.9.1~b0-1.fc41.noarch.rpm"
+source=("https://repo.protonvpn.com/fedora-41-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.9.3~b0-1.fc41.noarch.rpm"
         "https://repo.protonvpn.com/fedora-41-unstable/python3-proton-keyring-linux/python3-proton-keyring-linux-0.2.0-1.fc41.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-41-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.41.5-1.fc41.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-41-unstable/python3-proton-vpn-network-manager/python3-proton-vpn-network-manager-0.12.6-1.fc41.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-41-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.42.2-1.fc41.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-41-unstable/python3-proton-vpn-network-manager/python3-proton-vpn-network-manager-0.12.10-1.fc41.noarch.rpm"
         "https://repo.protonvpn.com/fedora-41-unstable/python3-proton-core/python3-proton-core-0.4.0-1.fc41.noarch.rpm"
 )
 
-sha256sums=('86b0b2577f9a0040ca1fcd5d6d261652cb682bd12ddda24d90af8e8e613a2da9'
+sha256sums=('497fa9ebebbb5c565df70ba8188985ef074ba972328d953d2cc1810df7a316d3'
             '222d44e91f35dd7d736edd84d59e799ad4cdcf6fb87b5649fcc7e7af45e708ee'
-            'a48856eeded15075232d1001b8242b790efb537f02f56b6c4cb4ba6ec6660c17'
-            '3f5cb78c6c9c5199194daf83dcfd43f1f68adaa035f4f3cf2abf57c50ffea2eb'
+            '02475d43e632d97b929f0f3b247d2b0f1fbb077cfae1099ee98a615aa7cb39c2'
+            'a0779169ad8310aa260b0b1dfdf7b62455f1339580ecae2e52c836a44729a393'
             '6304599e58ccae15384f03dbd1b27f8b70414709f021ae8b559a54ceb7b54bc1')
 
 if [[ "$CARCH" == "x86_64" ]]; then
