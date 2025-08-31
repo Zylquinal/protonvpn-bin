@@ -1,0 +1,16 @@
+post_install() {
+  echo ">>> Installed me.proton.vpn.split_tunneling.service"
+  echo ">>> To enable and start it, run:"
+  echo "    sudo systemctl enable --now me.proton.vpn.split_tunneling.service"
+  echo "You may also need to clear ~/.cache/Proton/VPN/features.json for new features to be recognized by the app"
+}
+
+post_upgrade() {
+  post_install "$@"
+}
+
+post_remove() {
+  echo ">>> Removed me.proton.vpn.split_tunneling.service"
+  echo ">>> If you had enabled it, you may disable it with:"
+  echo "    sudo systemctl disable me.proton.vpn.split_tunneling.service"
+}

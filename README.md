@@ -20,3 +20,12 @@ git clone https://github.com/Zylquinal/protonvpn-bin
 cd protonvpn-bin
 makepkg -si
 ```
+
+## Enable Split Tunneling Services
+```bash
+# Enable the split tunneling services
+sudo systemctl enable --now me.proton.vpn.split_tunneling.service
+
+# Clear features cache
+rm ~/.cache/Proton/VPN/features.json
+```
