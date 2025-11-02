@@ -1,7 +1,7 @@
 # Maintainer: Zylquinal <contact@zylquinal.com>
 
 pkgname=protonvpn-bin
-pkgver=4.10.0~b0
+pkgver=4.12.0
 pkgrel=1
 pkgdesc="ProtonVPN for Linux"
 url="https://github.com/Zylquinal/protonvpn-bin"
@@ -43,32 +43,32 @@ conflicts=('protonvpn'
            'protonvpn-gui'
 )
 
-source=("https://repo.protonvpn.com/fedora-42-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.10.0~b0-1.fc42.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-keyring-linux/python3-proton-keyring-linux-0.2.0-1.fc42.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-0.45.6-1.fc42.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-network-manager/python3-proton-vpn-network-manager-0.12.15-1.fc42.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-core/python3-proton-core-0.6.0-1.fc42.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-42-unstable/proton-vpn-daemon/proton-vpn-daemon-0.12.0-1.fc42.noarch.rpm"
+source=("https://repo.protonvpn.com/fedora-42-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.12.0-1.fc42.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-keyring-linux/python3-proton-keyring-linux-0.2.1-1.fc42.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-4.13.1-1.fc42.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-network-manager/python3-proton-vpn-network-manager-0.13.4-1.fc42.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-core/python3-proton-core-0.7.3-1.fc42.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-42-unstable/proton-vpn-daemon/proton-vpn-daemon-0.13.4-1.fc42.noarch.rpm"
 )
 
-sha256sums=('9a0e82889d51bd437d03cc4cc3d96a20e2e6e8f76d3a5637d298df763c4d03fd'
-            'a168022209ff8a761e2ee89ee28ce7845606bdeb16a2900a2daf067614aa2315'
-            'f8a760ca105cf8dd1a266a63bd747ef2d6351486c221fb73e1099dc1e542c43a'
-            '2dc22bdccc65c0f5f47a2afe88dca65bbf543d2af8a83c93fc43c8210f7f7d07'
-            'ced29c4ff5dce447a7104f098e5a5d68f2f283cf949d914324a68f8941e10e27'
-            'fb4c92c366b3f3d52270c1eac101f1f54f184c41b55501715e11284f23a3e4a3')
+sha256sums=('f0d954b93084b7c38089e0fb3a425f5484218d8f969c7cf24beb1a8af8af1c05'
+            'dc85c7ef84a1e75f41c5fd4f53c1ec8ca0e926dbfec3cec2c11e818d18599ae1'
+            'bb9674cb96c784e38ad91a734b85fb209a44bbe237fa781b79c44f2a5284f945'
+            'd8d9b8ea8abdb2894607b8822757212ac6d13e843303d89db7d446e7d2a39f8e'
+            '48e99afe6f818c7ac54b535e3d8a7df8192e2a65a831cff6d16ba77ec3284c88'
+            'e357838cc672a22298530875d08cf711265f0e160fcb116dff06dd851d87d1cc')
 
 install=script.install
 
 if [[ "$CARCH" == "x86_64" ]]; then
-  source+=("https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-local-agent/python3-proton-vpn-local-agent-1.4.6-1.fc42.x86_64.rpm")
-  sha256sums+=("4d3ab05fe342e1e55086cda7e17655e89c98d914a7db57cc15150c9b7d9ec07e")
+  source+=("https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-local-agent/python3-proton-vpn-local-agent-1.6.0-1.fc42.x86_64.rpm")
+  sha256sums+=("c9f1e6176958f4681e3e5e26afc7324e3e22af1f2a1d3548330d86e950929186")
 
   source+=("https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-lib/python3-proton-vpn-lib-0.1.1-1.fc42.x86_64.rpm")
   sha256sums+=("bc11352c346020657353096700c8336d46f27fb75b8f29b8363c9e194c094146")
 elif [[ "$CARCH" == "aarch64" ]]; then
-  source+=("https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-local-agent/python3-proton-vpn-local-agent-1.4.6-1.fc42.aarch64.rpm")
-  sha256sums+=("3d4ca782d0bab1a0b561feffc6cda3bb2b3a75033993668c03f8f528cd657223")
+  source+=("https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-local-agent/python3-proton-vpn-local-agent-1.6.0-1.fc42.aarch64.rpm")
+  sha256sums+=("bd99bbdcabb09150faa9aa71cbe5027c4b2268a373af49708a11db54a4859cfb")
 
   source+=("https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-lib/python3-proton-vpn-lib-0.1.1-1.fc42.aarch64.rpm")
   sha256sums+=("6354971a912338e7008b495b18bb9e1f34cca5cf8a9a604463c837dd14344866")
