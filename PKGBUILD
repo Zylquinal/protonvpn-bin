@@ -1,7 +1,7 @@
 # Maintainer: Zylquinal <contact@zylquinal.com>
 
 pkgname=protonvpn-bin
-pkgver=4.12.0
+pkgver=4.13.1
 pkgrel=1
 pkgdesc="ProtonVPN for Linux"
 url="https://github.com/Zylquinal/protonvpn-bin"
@@ -43,18 +43,18 @@ conflicts=('protonvpn'
            'protonvpn-gui'
 )
 
-source=("https://repo.protonvpn.com/fedora-42-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.12.0-1.fc42.noarch.rpm"
+source=("https://repo.protonvpn.com/fedora-42-unstable/proton-vpn-gtk-app/proton-vpn-gtk-app-4.13.1-1.fc42.noarch.rpm"
         "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-keyring-linux/python3-proton-keyring-linux-0.2.1-1.fc42.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-4.13.1-1.fc42.noarch.rpm"
-        "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-network-manager/python3-proton-vpn-network-manager-0.13.4-1.fc42.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-api-core/python3-proton-vpn-api-core-4.14.1-1.fc42.noarch.rpm"
+        "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-vpn-network-manager/python3-proton-vpn-network-manager-0.13.5-1.fc42.noarch.rpm"
         "https://repo.protonvpn.com/fedora-42-unstable/python3-proton-core/python3-proton-core-0.7.3-1.fc42.noarch.rpm"
         "https://repo.protonvpn.com/fedora-42-unstable/proton-vpn-daemon/proton-vpn-daemon-0.13.4-1.fc42.noarch.rpm"
 )
 
-sha256sums=('f0d954b93084b7c38089e0fb3a425f5484218d8f969c7cf24beb1a8af8af1c05'
+sha256sums=('ce6374f3e65699383a235b114410e390a2cd9c42e7a8b8159b5ee1de00c48bc6'
             'dc85c7ef84a1e75f41c5fd4f53c1ec8ca0e926dbfec3cec2c11e818d18599ae1'
-            'bb9674cb96c784e38ad91a734b85fb209a44bbe237fa781b79c44f2a5284f945'
-            'd8d9b8ea8abdb2894607b8822757212ac6d13e843303d89db7d446e7d2a39f8e'
+            '2fa03fa0520dc3fd0f472a7ea7347084493d2db57736608148a9af2737d09eed'
+            'f827fc778be4e885007afa9d73efe54cb266292dc6ffa4633384fa5cb8f40f48'
             '48e99afe6f818c7ac54b535e3d8a7df8192e2a65a831cff6d16ba77ec3284c88'
             'e357838cc672a22298530875d08cf711265f0e160fcb116dff06dd851d87d1cc')
 
